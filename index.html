@@ -16,8 +16,11 @@
 
     #reader {
       width: 320px;
-      height: 320px;
+      height: 320px; /* 摄像头区域设置为正方形 */
       margin-bottom: 10px;
+      position: relative;
+      border: 2px solid #ccc;
+      border-radius: 8px;
     }
 
     #result {
@@ -46,11 +49,25 @@
     #rescan-btn:hover {
       background-color: #0056b3;
     }
+
+    .qr-box {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 250px;
+      height: 250px;
+      transform: translate(-50%, -50%);
+      border: 2px dashed #00bfff;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
-  <h2>请将二维码对准扫描框</h2>
-  <div id="reader"></div>
+  <h2>请将二维码对准扫描</h2>
+  <div id="reader">
+    <!-- 正方形扫描框 -->
+    <div class="qr-box"></div>
+  </div>
   <div id="result">扫描结果将显示在这里</div>
   <div id="error"></div>
   <button id="rescan-btn" style="display: none;">重新扫描</button>
