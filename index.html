@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>二维码扫描</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f9f9f9;
+      padding-top: 40px;
+    }
+
+    #reader {
+      width: 320px;
+      height: 320px;
+      margin-bottom: 10px;
+    }
+
+    #result {
+      margin-top: 10px;
+      font-size: 18px;
+      color: green;
+    }
+
+    #error {
+      margin-top: 10px;
+      font-size: 14px;
+      color: red;
+    }
+
+    #rescan-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #rescan-btn:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h2>请将二维码对准扫描框</h2>
+  <div id="reader"></div>
+  <div id="result">扫描结果将显示在这里</div>
+  <div id="error"></div>
+  <button id="rescan-btn" style="display: none;">重新扫描</button>
+
+  <script>
+    const resultElem = document.getElementById('result');
+    const errorElem = document.getElementById('error');
+    const rescanBtn = document.getElementById('rescan-btn');
+    const qrScanner = new Html5Qrcode("reader");
+
+    function startScanner() {
+      resultElem.innerText = "扫描结果将显示在这里";
+      errorElem.innerText = "";
+      rescanBtn.style.display = "none";
+
+      qrScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        onScanSuccess
+      ).catch(err => {
+        console.error("摄像头启动失败：", err);
+        errorElem.innerText = "无法启动摄像头：" + err;
+      });
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+      resultElem.innerText = `扫描结果：${decodedText}`;
+      rescanBtn.style.display = "inline-block";
+
+      qrScanner.stop().then(() => {
+        console.log("摄像头已关闭");
+      }).catch(err => {
+        console.error("摄像头关闭失败：", err);
+      });
+    }
+
+    rescanBtn.addEventListener("click", startScanner);
+
+    // 初始化扫描
+    startScanner();
+  </script>
+</body>
+</html>
