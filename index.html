@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>二维码扫描</title>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
@@ -16,23 +17,57 @@
 
     #reader {
       width: 320px;
-      height: 320px; /* 摄像头区域设置为正方形 */
+      height: 320px; 
       margin-bottom: 10px;
       position: relative;
       border: 2px solid #ccc;
       border-radius: 8px;
+      overflow: hidden; /* 隐藏超出范围的内容 */
+    }
+
+    #reader video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; 
+    }
+
+    .qr-box {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 250px;
+      height: 250px;
+      transform: translate(-50%, -50%);
+      border: 2px dashed #00bfff;
+      border-radius: 8px;
     }
 
     #result {
+      width: 320px;
+      height: 80px;  
       margin-top: 10px;
       font-size: 18px;
       color: green;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      background-color: #f1f1f1;
     }
 
     #error {
+      width: 320px;
+      height: 80px; 
       margin-top: 10px;
       font-size: 14px;
       color: red;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      background-color: #f1f1f1;
     }
 
     #rescan-btn {
@@ -50,22 +85,35 @@
       background-color: #0056b3;
     }
 
-    .qr-box {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 250px;
-      height: 250px;
-      transform: translate(-50%, -50%);
-      border: 2px dashed #00bfff;
-      border-radius: 8px;
+    /* 媒体查询：当屏幕宽度小于等于 768px 时 (手机端) */
+    @media (max-width: 768px) {
+      /* 手机端摄像头区域宽度为100% */
+      #reader {
+        width: 100%;
+        height: auto;
+        max-width: 100%;
+        margin-bottom: 10px;
+      }
+
+      .qr-box {
+        width: 80vw;
+        height: 80vw;
+      }
+
+      #result {
+        width: 100%;
+        height: 80px;
+      }
+
+      #error {
+        width: 100%;
+        height: 80px;
+      }
     }
   </style>
 </head>
 <body>
-  <h2>请将二维码对准扫描</h2>
   <div id="reader">
-    <!-- 正方形扫描框 -->
     <div class="qr-box"></div>
   </div>
   <div id="result">扫描结果将显示在这里</div>
