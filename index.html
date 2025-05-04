@@ -135,10 +135,11 @@
 </head>
 <body>
 
-  <h1>这是小彰宝，让我们点一下他</h1>
-
-  <div id="xiaozhangbao" onclick="showPopup()">
-    <img src="0.gif" alt="小彰宝 - 仓鼠">
+  <div id="intro">
+    <h1>这是小彰宝，让我们点一下他</h1>
+    <div id="xiaozhangbao" onclick="showPopup()">
+      <img src="0.gif" alt="小彰宝 - 仓鼠">
+    </div>
   </div>
 
   <!-- 弹窗 -->
@@ -224,15 +225,18 @@
       action: 0,
     };
 
+    // 显示弹窗
     function showPopup() {
       document.getElementById('popup').style.display = 'flex';
     }
 
+    // 显示属性分配界面
     function showAttributes() {
       document.getElementById('popup').style.display = 'none';
       document.getElementById('attributes').style.display = 'block';
     }
 
+    // 调整属性
     function adjust(attr, amount) {
       if (amount > 0 && totalEnergy < amount) return;
       if (attributes[attr] + amount < 0) return;
@@ -242,6 +246,7 @@
       updateDisplay();
     }
 
+    // 更新显示
     function updateDisplay() {
       for (const key in attributes) {
         document.getElementById(key).textContent = attributes[key];
@@ -249,6 +254,7 @@
       document.getElementById('total').textContent = totalEnergy;
     }
 
+    // 重置属性
     function resetAttributes() {
       for (const key in attributes) {
         attributes[key] = 0;
@@ -258,12 +264,18 @@
       deleteCookie('xiaozhang_attributes');
     }
 
+    // 确认属性
     function confirmAttributes() {
       const data = { ...attributes, totalEnergy };
       document.cookie = `xiaozhang_attributes=${encodeURIComponent(JSON.stringify(data))}; path=/; max-age=604800`;
+
+      // 隐藏小彰宝的介绍和图片
+      document.getElementById('intro').style.display = 'none';
+
       showCard();
     }
 
+    // 显示属性卡
     function showCard() {
       document.getElementById('attributes').style.display = 'none';
       const list = document.getElementById('cardList');
@@ -279,19 +291,27 @@
       document.getElementById('card').style.display = 'block';
     }
 
+    // 返回编辑属性
     function backToEdit() {
       document.getElementById('card').style.display = 'none';
       document.getElementById('attributes').style.display = 'block';
     }
 
+    // 继续按钮跳转到新页面，并传递属性作为 URL 参数
     function continueNext() {
-      alert("你可以在这里继续下一步内容，例如冒险或剧情发展！");
+      const params = new URLSearchParams(attributes);
+      params.append('totalEnergy', totalEnergy);
+
+      // 跳转到新的页面并传递属性
+      window.location.href = `newPage.html?${params.toString()}`;
     }
 
+    // 删除 cookie
     function deleteCookie(name) {
       document.cookie = `${name}=; path=/; max-age=0`;
     }
 
+    // 加载属性数据
     function loadAttributesFromCookie() {
       const match = document.cookie.match(/xiaozhang_attributes=([^;]+)/);
       if (match) {
@@ -301,7 +321,8 @@
         }
         totalEnergy = data.totalEnergy || 700;
         updateDisplay();
-        document.getElementById('attributes').style.display = 'block';
+        document.getElementById('intro').style.display = 'none';
+        showCard();
       }
     }
 
