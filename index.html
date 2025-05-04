@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>小彰宝属性分配</title>
+  <style>
+    body {
+      font-family: "微软雅黑", sans-serif;
+      text-align: center;
+      background-color: #fffbe6;
+      padding-top: 30px;
+    }
+    h1, h2 {
+      color: #8b4513;
+    }
+
+    #xiaozhangbao {
+      width: 200px;
+      height: 200px;
+      margin: 20px auto;
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    #xiaozhangbao:hover {
+      transform: scale(1.05);
+    }
+    #xiaozhangbao img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #popup, #attributes, #card {
+      display: none;
+    }
+
+    #popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    #popupContent {
+      background-color: #fff;
+      padding: 30px 40px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    #popupContent p {
+      font-size: 20px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    #popupContent button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #ffcc00;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .attribute-row {
+      margin: 10px 0;
+    }
+
+    .attribute-label {
+      display: inline-block;
+      width: 80px;
+      text-align: right;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+
+    .attribute-buttons button {
+      width: 30px;
+      margin: 0 5px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    #remaining {
+      margin: 20px 0;
+      font-size: 16px;
+      color: #333;
+    }
+
+    #confirmBtns, #cardBtns {
+      margin-top: 20px;
+    }
+
+    #confirmBtns button, #cardBtns button {
+      margin: 0 10px;
+      padding: 8px 16px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      background-color: #ffa500;
+      cursor: pointer;
+    }
+
+    #card {
+      background: #fff8dc;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 30px auto;
+      width: 300px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    #card h3 {
+      color: #8b0000;
+    }
+
+    #card ul {
+      text-align: left;
+      padding-left: 0;
+      list-style: none;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>这是小彰宝，让我们点一下他</h1>
+
+  <div id="xiaozhangbao" onclick="showPopup()">
+    <img src="0.gif" alt="小彰宝 - 仓鼠">
+  </div>
+
+  <!-- 弹窗 -->
+  <div id="popup">
+    <div id="popupContent">
+      <p>获得一个呆呆小彰！</p>
+      <button onclick="showAttributes()">继续</button>
+    </div>
+  </div>
+
+  <!-- 属性分配界面 -->
+  <div id="attributes">
+    <h2>你希望小彰获得的属性：</h2>
+    <div id="remaining">总能量：<span id="total">700</span> （每次增减 25）</div>
+
+    <div class="attribute-row"><span class="attribute-label">感性：</span>
+      <div class="attribute-buttons">
+        <button onclick="adjust('emotion', -25)">-</button>
+        <span id="emotion">0</span>
+        <button onclick="adjust('emotion', 25)">+</button>
+      </div>
+    </div>
+    <div class="attribute-row"><span class="attribute-label">艺术：</span>
+      <div class="attribute-buttons">
+        <button onclick="adjust('art', -25)">-</button>
+        <span id="art">0</span>
+        <button onclick="adjust('art', 25)">+</button>
+      </div>
+    </div>
+    <div class="attribute-row"><span class="attribute-label">智力：</span>
+      <div class="attribute-buttons">
+        <button onclick="adjust('intelligence', -25)">-</button>
+        <span id="intelligence">0</span>
+        <button onclick="adjust('intelligence', 25)">+</button>
+      </div>
+    </div>
+    <div class="attribute-row"><span class="attribute-label">思想：</span>
+      <div class="attribute-buttons">
+        <button onclick="adjust('thought', -25)">-</button>
+        <span id="thought">0</span>
+        <button onclick="adjust('thought', 25)">+</button>
+      </div>
+    </div>
+    <div class="attribute-row"><span class="attribute-label">耐力：</span>
+      <div class="attribute-buttons">
+        <button onclick="adjust('endurance', -25)">-</button>
+        <span id="endurance">0</span>
+        <button onclick="adjust('endurance', 25)">+</button>
+      </div>
+    </div>
+    <div class="attribute-row"><span class="attribute-label">行动力：</span>
+      <div class="attribute-buttons">
+        <button onclick="adjust('action', -25)">-</button>
+        <span id="action">0</span>
+        <button onclick="adjust('action', 25)">+</button>
+      </div>
+    </div>
+
+    <div id="confirmBtns">
+      <button onclick="confirmAttributes()">确认</button>
+      <button onclick="resetAttributes()">重置</button>
+    </div>
+  </div>
+
+  <!-- 属性卡展示 -->
+  <div id="card">
+    <h3>小彰的属性卡</h3>
+    <ul id="cardList"></ul>
+    <div id="cardBtns">
+      <button onclick="backToEdit()">重选</button>
+      <button onclick="continueNext()">继续</button>
+    </div>
+  </div>
+
+  <script>
+    let totalEnergy = 700;
+    const attributes = {
+      emotion: 0,
+      art: 0,
+      intelligence: 0,
+      thought: 0,
+      endurance: 0,
+      action: 0,
+    };
+
+    function showPopup() {
+      document.getElementById('popup').style.display = 'flex';
+    }
+
+    function showAttributes() {
+      document.getElementById('popup').style.display = 'none';
+      document.getElementById('attributes').style.display = 'block';
+    }
+
+    function adjust(attr, amount) {
+      if (amount > 0 && totalEnergy < amount) return;
+      if (attributes[attr] + amount < 0) return;
+
+      attributes[attr] += amount;
+      totalEnergy -= amount;
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      for (const key in attributes) {
+        document.getElementById(key).textContent = attributes[key];
+      }
+      document.getElementById('total').textContent = totalEnergy;
+    }
+
+    function resetAttributes() {
+      for (const key in attributes) {
+        attributes[key] = 0;
+      }
+      totalEnergy = 700;
+      updateDisplay();
+      deleteCookie('xiaozhang_attributes');
+    }
+
+    function confirmAttributes() {
+      const data = { ...attributes, totalEnergy };
+      document.cookie = `xiaozhang_attributes=${encodeURIComponent(JSON.stringify(data))}; path=/; max-age=604800`;
+      showCard();
+    }
+
+    function showCard() {
+      document.getElementById('attributes').style.display = 'none';
+      const list = document.getElementById('cardList');
+      list.innerHTML = `
+        <li>感性：${attributes.emotion}</li>
+        <li>艺术：${attributes.art}</li>
+        <li>智力：${attributes.intelligence}</li>
+        <li>思想：${attributes.thought}</li>
+        <li>耐力：${attributes.endurance}</li>
+        <li>行动力：${attributes.action}</li>
+        <li>剩余能量：${totalEnergy}</li>
+      `;
+      document.getElementById('card').style.display = 'block';
+    }
+
+    function backToEdit() {
+      document.getElementById('card').style.display = 'none';
+      document.getElementById('attributes').style.display = 'block';
+    }
+
+    function continueNext() {
+      alert("你可以在这里继续下一步内容，例如冒险或剧情发展！");
+    }
+
+    function deleteCookie(name) {
+      document.cookie = `${name}=; path=/; max-age=0`;
+    }
+
+    function loadAttributesFromCookie() {
+      const match = document.cookie.match(/xiaozhang_attributes=([^;]+)/);
+      if (match) {
+        const data = JSON.parse(decodeURIComponent(match[1]));
+        for (const key in attributes) {
+          attributes[key] = data[key] || 0;
+        }
+        totalEnergy = data.totalEnergy || 700;
+        updateDisplay();
+        document.getElementById('attributes').style.display = 'block';
+      }
+    }
+
+    // 自动加载
+    window.onload = loadAttributesFromCookie;
+  </script>
+
+</body>
+</html>
