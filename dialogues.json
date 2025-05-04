@@ -1,0 +1,52 @@
+[
+    {
+      "text": "让我们开始吧！",
+      "image": "images/1.jpg", 
+      "options": [
+        { 
+          "text": "继续", 
+          "action": 1,
+          "attributeChanges": {},
+          "attributeChangeMessage": ""
+        }
+      ]
+    },
+    {
+      "text": "小彰想要抱抱和亲亲。",
+      "image": "images/2.gif", 
+      "options": [
+        { 
+          "text": "打打小彰宝", 
+          "action": 2,
+          "attributeChanges": { "endurance": 5 },
+          "attributeChangeMessage": "小彰宝耐力+5"
+        },
+        { 
+          "text": "不理小彰宝", 
+          "action": 2,
+          "attributeChanges": { "emotion": -5 },
+          "attributeChangeMessage": "小彰宝感性-5"
+        }
+      ]
+    },
+    {
+      "text": "是否带小彰一起进入神秘洞穴",
+      "image": "images/3.jpg", 
+      "options": [
+        { 
+          "text": "继续前进", 
+          "action": 3,
+          "attributeChanges": { "endurance": -5, "action": 5 },
+          "attributeChangeMessage": "耐力减少了5，行动力增加了5"
+        },
+        {
+            "text": "回头离开",
+            "action": 4,
+            "attributeChanges": {},
+            "attributeChangeMessage": ""
+          }
+          
+      ]
+    }
+  ]
+  
