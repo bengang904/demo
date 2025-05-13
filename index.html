@@ -1,76 +1,69 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>设备信息总览</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>设备传感器状态</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
     h1 { color: #333; }
-    p, div { margin-bottom: 10px; }
+    p { margin: 10px 0; font-size: 1.1em; }
   </style>
 </head>
 <body>
-  <h1>设备信息总览</h1>
-  <div id="info"><p>加载中...</p></div>
+  <h1>监测用户设备状态</h1>
+  <p id="battery">🔋 电池状态: 检测中...</p>
+  <p id="motion">加速度: 检测中...</p>
+  <p id="orientation">方向感应: 检测中...</p>
 
   <script>
-    async function getDeviceInfo() {
-      let html = "";
-
-      // 电池
-      if (navigator.getBattery) {
-        try {
-          const battery = await navigator.getBattery();
-          const level = Math.round(battery.level * 100);
-          const batteryEmoji = level >= 80 ? "🔋" : level >= 40 ? "🔌" : "🪫";
-          html += `<strong>电池状态:</strong> ${batteryEmoji} ${level}%<br>`;
-          html += `<strong>充电中:</strong> ${battery.charging ? '✅ 是' : '❌ 否'}<br><br>`;
-        } catch {
-          html += `<strong>电池信息:</strong> 无法访问<br><br>`;
-        }
-      } else {
-        html += `<strong>电池信息:</strong> 当前浏览器不支持<br><br>`;
-      }
-
-      // 基本信息
-      html += `<strong>用户代理:</strong> ${navigator.userAgent}<br>`;
-      html += `<strong>平台:</strong> ${navigator.platform}<br><br>`;
-
-      // 屏幕
-      html += `<strong>屏幕分辨率:</strong> ${screen.width} x ${screen.height}<br>`;
-      html += `<strong>可用区域:</strong> ${screen.availWidth} x ${screen.availHeight}<br>`;
-      html += `<strong>设备像素比:</strong> ${window.devicePixelRatio}<br><br>`;
-
-      // CPU & 内存
-      html += `<strong>逻辑核心数:</strong> ${navigator.hardwareConcurrency}<br>`;
-      html += `<strong>设备内存:</strong> ${navigator.deviceMemory ? navigator.deviceMemory + " GB" : "未知"}<br><br>`;
-
-      // 网络
-      if (navigator.connection) {
-        html += `<strong>网络类型:</strong> ${navigator.connection.effectiveType}<br>`;
-        html += `<strong>下行速度:</strong> ${navigator.connection.downlink} Mb/s<br><br>`;
-      }
-
-      document.getElementById("info").innerHTML = html;
+    // 电池状态
+    if (navigator.getBattery) {
+      navigator.getBattery().then(battery => {
+        const level = Math.round(battery.level * 100);
+        const emoji = level >= 80 ? "🔋" : level >= 40 ? "🔌" : "🪫";
+        document.getElementById("battery").textContent =
+          `${emoji} 电池电量: ${level}%，充电中: ${battery.charging ? "是 ✅" : "否 ❌"}`;
+      }).catch(() => {
+        document.getElementById("battery").textContent = "⚠️ 无法获取电池信息";
+      });
+    } else {
+      document.getElementById("battery").textContent = "⚠️ 当前浏览器不支持电池信息";
     }
 
-    getDeviceInfo();
+    // 判断是否移动手机
+    window.addEventListener("devicemotion", (event) => {
+      const x = event.acceleration.x || 0;
+      const y = event.acceleration.y || 0;
+      const z = event.acceleration.z || 0;
+      const total = Math.sqrt(x * x + y * y + z * z);
 
-    // 方向感应
-    window.addEventListener("deviceorientation", event => {
-      document.getElementById("orientation").innerHTML =
-        `<strong>方向感应:</strong> alpha: ${event.alpha?.toFixed(2)}, beta: ${event.beta?.toFixed(2)}, gamma: ${event.gamma?.toFixed(2)}`;
+      const isMoving = total > 1.5; // 简单阈值判断是否移动
+      document.getElementById("motion").textContent =
+        `📦 加速度: x=${x.toFixed(2)}, y=${y.toFixed(2)}, z=${z.toFixed(2)} → ${isMoving ? "📳 手机在移动" : "📴 静止"}`;
     });
 
-    // 加速度
-    window.addEventListener("devicemotion", event => {
-      document.getElementById("motion").innerHTML =
-        `<strong>加速度:</strong> x: ${event.acceleration.x?.toFixed(2)}, y: ${event.acceleration.y?.toFixed(2)}, z: ${event.acceleration.z?.toFixed(2)}`;
+    // 判断是否抬起手机、屏幕朝向
+    window.addEventListener("deviceorientation", (event) => {
+      const beta = event.beta; // 前后倾斜（-180 到 180）
+      const gamma = event.gamma; // 左右倾斜（-90 到 90）
+      let position = "";
+
+      if (beta > 45) {
+        position = "📲 手机可能被抬起（垂直）";
+      } else if (Math.abs(gamma) < 10 && Math.abs(beta) < 10) {
+        position = "🛌 手机平放";
+      } else if (gamma > 45) {
+        position = "↪️ 手机朝右";
+      } else if (gamma < -45) {
+        position = "↩️ 手机朝左";
+      } else {
+        position = "📐 未知方向";
+      }
+
+      document.getElementById("orientation").textContent =
+        `🧭 方向: beta=${beta?.toFixed(1)}, gamma=${gamma?.toFixed(1)} → ${position}`;
     });
   </script>
-
-  <p id="orientation">方向感应: 不支持或未触发</p>
-  <p id="motion">加速度: 不支持或未触发</p>
 </body>
 </html>
