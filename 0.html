@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta charset="UTF-8"><title>支付请求</title></head>
+<body>
+  <h1>尝试支付功能 💳</h1>
+  <button onclick="payNow()">发起支付</button>
+
+  <script>
+    async function payNow() {
+      if (!window.PaymentRequest) {
+        alert("不支持 Payment Request API");
+        return;
+      }
+
+      const request = new PaymentRequest(
+        [{
+          supportedMethods: "basic-card"
+        }],
+        {
+          total: { label: "测试商品", amount: { currency: "CNY", value: "1.00" } }
+        }
+      );
+
+      try {
+        const response = await request.show();
+        await response.complete("success");
+        alert("支付成功！（测试）");
+      } catch (err) {
+        alert("用户取消或失败");
+      }
+    }
+  </script>
+</body>
+</html>
