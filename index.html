@@ -7,7 +7,7 @@
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
     h1 { color: #333; }
-    pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+    p, div { margin-bottom: 10px; }
   </style>
 </head>
 <body>
@@ -18,31 +18,14 @@
     async function getDeviceInfo() {
       let html = "";
 
-      // 用户代理和平台信息
-      html += `<strong>用户代理:</strong> ${navigator.userAgent}<br>`;
-      html += `<strong>平台:</strong> ${navigator.platform}<br><br>`;
-
-      // 屏幕信息
-      html += `<strong>屏幕分辨率:</strong> ${screen.width} x ${screen.height}<br>`;
-      html += `<strong>可用区域:</strong> ${screen.availWidth} x ${screen.availHeight}<br>`;
-      html += `<strong>设备像素比:</strong> ${window.devicePixelRatio}<br><br>`;
-
-      // CPU 和内存
-      html += `<strong>逻辑核心数:</strong> ${navigator.hardwareConcurrency}<br>`;
-      html += `<strong>设备内存:</strong> ${navigator.deviceMemory ? navigator.deviceMemory + " GB" : "未知"}<br><br>`;
-
-      // 网络信息
-      if (navigator.connection) {
-        html += `<strong>网络类型:</strong> ${navigator.connection.effectiveType}<br>`;
-        html += `<strong>下行速度:</strong> ${navigator.connection.downlink} Mb/s<br><br>`;
-      }
-
-      // 电池信息
+      // 电池
       if (navigator.getBattery) {
         try {
           const battery = await navigator.getBattery();
-          html += `<strong>电池电量:</strong> ${Math.round(battery.level * 100)}%<br>`;
-          html += `<strong>充电状态:</strong> ${battery.charging ? '充电中' : '未充电'}<br><br>`;
+          const level = Math.round(battery.level * 100);
+          const batteryEmoji = level >= 80 ? "🔋" : level >= 40 ? "🔌" : "🪫";
+          html += `<strong>电池状态:</strong> ${batteryEmoji} ${level}%<br>`;
+          html += `<strong>充电中:</strong> ${battery.charging ? '✅ 是' : '❌ 否'}<br><br>`;
         } catch {
           html += `<strong>电池信息:</strong> 无法访问<br><br>`;
         }
@@ -50,35 +33,41 @@
         html += `<strong>电池信息:</strong> 当前浏览器不支持<br><br>`;
       }
 
-      // 多媒体设备（摄像头、麦克风）
-      if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-        try {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          html += `<strong>多媒体设备:</strong><br>`;
-          devices.forEach(device => {
-            html += `&nbsp;&nbsp;- ${device.kind}: ${device.label || '（未授权）'}<br>`;
-          });
-          html += "<br>";
-        } catch (err) {
-          html += `<strong>多媒体设备:</strong> 无法访问 (${err.message})<br><br>`;
-        }
+      // 基本信息
+      html += `<strong>用户代理:</strong> ${navigator.userAgent}<br>`;
+      html += `<strong>平台:</strong> ${navigator.platform}<br><br>`;
+
+      // 屏幕
+      html += `<strong>屏幕分辨率:</strong> ${screen.width} x ${screen.height}<br>`;
+      html += `<strong>可用区域:</strong> ${screen.availWidth} x ${screen.availHeight}<br>`;
+      html += `<strong>设备像素比:</strong> ${window.devicePixelRatio}<br><br>`;
+
+      // CPU & 内存
+      html += `<strong>逻辑核心数:</strong> ${navigator.hardwareConcurrency}<br>`;
+      html += `<strong>设备内存:</strong> ${navigator.deviceMemory ? navigator.deviceMemory + " GB" : "未知"}<br><br>`;
+
+      // 网络
+      if (navigator.connection) {
+        html += `<strong>网络类型:</strong> ${navigator.connection.effectiveType}<br>`;
+        html += `<strong>下行速度:</strong> ${navigator.connection.downlink} Mb/s<br><br>`;
       }
-
-      // 方向与加速度监听（仅在手机/平板生效）
-      window.addEventListener("deviceorientation", event => {
-        document.getElementById("orientation").innerHTML =
-          `<strong>方向感应:</strong> alpha: ${event.alpha?.toFixed(2)}, beta: ${event.beta?.toFixed(2)}, gamma: ${event.gamma?.toFixed(2)}`;
-      });
-
-      window.addEventListener("devicemotion", event => {
-        document.getElementById("motion").innerHTML =
-          `<strong>加速度:</strong> x: ${event.acceleration.x?.toFixed(2)}, y: ${event.acceleration.y?.toFixed(2)}, z: ${event.acceleration.z?.toFixed(2)}`;
-      });
 
       document.getElementById("info").innerHTML = html;
     }
 
     getDeviceInfo();
+
+    // 方向感应
+    window.addEventListener("deviceorientation", event => {
+      document.getElementById("orientation").innerHTML =
+        `<strong>方向感应:</strong> alpha: ${event.alpha?.toFixed(2)}, beta: ${event.beta?.toFixed(2)}, gamma: ${event.gamma?.toFixed(2)}`;
+    });
+
+    // 加速度
+    window.addEventListener("devicemotion", event => {
+      document.getElementById("motion").innerHTML =
+        `<strong>加速度:</strong> x: ${event.acceleration.x?.toFixed(2)}, y: ${event.acceleration.y?.toFixed(2)}, z: ${event.acceleration.z?.toFixed(2)}`;
+    });
   </script>
 
   <p id="orientation">方向感应: 不支持或未触发</p>
