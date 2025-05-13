@@ -1,34 +1,25 @@
 <!DOCTYPE html>
 <html lang="zh">
-<head><meta charset="UTF-8"><title>支付请求</title></head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>读取粘贴板内容</title>
+</head>
 <body>
-  <h1>尝试支付功能 💳</h1>
-  <button onclick="payNow()">发起支付</button>
+    <h1>点击按钮获取粘贴板内容</h1>
+    <button onclick="readClipboard()">读取粘贴板</button>
+    <p id="clipboardContent"></p>
 
-  <script>
-    async function payNow() {
-      if (!window.PaymentRequest) {
-        alert("不支持 Payment Request API");
-        return;
-      }
-
-      const request = new PaymentRequest(
-        [{
-          supportedMethods: "basic-card"
-        }],
-        {
-          total: { label: "测试商品", amount: { currency: "CNY", value: "1.00" } }
+    <script>
+        async function readClipboard() {
+            try {
+                const text = await navigator.clipboard.readText(); // 读取粘贴板文本
+                document.getElementById('clipboardContent').textContent = `粘贴板内容：${text}`;
+            } catch (err) {
+                console.error('读取粘贴板失败:', err);
+                document.getElementById('clipboardContent').textContent = '无法读取粘贴板内容。';
+            }
         }
-      );
-
-      try {
-        const response = await request.show();
-        await response.complete("success");
-        alert("支付成功！（测试）");
-      } catch (err) {
-        alert("用户取消或失败");
-      }
-    }
-  </script>
+    </script>
 </body>
 </html>
