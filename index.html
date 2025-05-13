@@ -17,13 +17,20 @@
   <p id="orientation">方向感应: 检测中...</p>
 
   <script>
-    // 电池状态
+    // 电池状态（每秒更新一次）
     if (navigator.getBattery) {
       navigator.getBattery().then(battery => {
-        const level = Math.round(battery.level * 100);
-        const emoji = level >= 80 ? "🔋" : level >= 40 ? "🔌" : "🪫";
-        document.getElementById("battery").textContent =
-          `${emoji} 电池电量: ${level}%，充电中: ${battery.charging ? "是 ✅" : "否 ❌"}`;
+        function updateBatteryInfo() {
+          const level = Math.round(battery.level * 100);
+          const emoji = level >= 80 ? "🔋" : level >= 40 ? "🔌" : "🪫";
+          document.getElementById("battery").textContent =
+            `${emoji} 电池电量: ${level}%，充电中: ${battery.charging ? "是 ✅" : "否 ❌"}`;
+        }
+
+        // 初次更新
+        updateBatteryInfo();
+        // 每 1 秒刷新电池状态
+        setInterval(updateBatteryInfo, 1000);
       }).catch(() => {
         document.getElementById("battery").textContent = "⚠️ 无法获取电池信息";
       });
@@ -45,8 +52,8 @@
 
     // 判断是否抬起手机、屏幕朝向
     window.addEventListener("deviceorientation", (event) => {
-      const beta = event.beta; // 前后倾斜（-180 到 180）
-      const gamma = event.gamma; // 左右倾斜（-90 到 90）
+      const beta = event.beta;
+      const gamma = event.gamma;
       let position = "";
 
       if (beta > 45) {
