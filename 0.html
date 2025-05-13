@@ -1,25 +1,45 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>读取粘贴板内容</title>
+  <meta charset="UTF-8">
+  <title>环境光传感器示例</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    #lux {
+      font-size: 2em;
+      color: green;
+    }
+  </style>
 </head>
 <body>
-    <h1>点击按钮获取粘贴板内容</h1>
-    <button onclick="readClipboard()">读取粘贴板</button>
-    <p id="clipboardContent"></p>
+  <h1>📡 环境光传感器</h1>
+  <p>当前光照强度：<span id="lux">检测中...</span> lux</p>
+  <p id="status"></p>
 
-    <script>
-        async function readClipboard() {
-            try {
-                const text = await navigator.clipboard.readText(); // 读取粘贴板文本
-                document.getElementById('clipboardContent').textContent = `粘贴板内容：${text}`;
-            } catch (err) {
-                console.error('读取粘贴板失败:', err);
-                document.getElementById('clipboardContent').textContent = '无法读取粘贴板内容。';
-            }
-        }
-    </script>
+  <script>
+    const luxElement = document.getElementById('lux');
+    const status = document.getElementById('status');
+
+    if ('AmbientLightSensor' in window) {
+      try {
+        const sensor = new AmbientLightSensor();
+        sensor.addEventListener('reading', () => {
+          luxElement.textContent = sensor.illuminance.toFixed(2);
+        });
+        sensor.addEventListener('error', event => {
+          status.textContent = `⚠️ 传感器错误：${event.error.name}`;
+        });
+        sensor.start();
+        status.textContent = '✅ 已启动环境光传感器';
+      } catch (err) {
+        status.textContent = `❌ 启动失败：${err.message}`;
+      }
+    } else {
+      status.textContent = '❌ 当前浏览器不支持 Ambient Light Sensor API';
+    }
+  </script>
 </body>
 </html>
