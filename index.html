@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>监测用户设备状态</title>
+  <title>设备传感器状态</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
     h1 { color: #333; }
@@ -40,7 +40,7 @@
 
       const isMoving = total > 1.5; // 简单阈值判断是否移动
       document.getElementById("motion").textContent =
-        `📦 加速度: x=${x.toFixed(2)}, y=${y.toFixed(2)}, z=${z.toFixed(2)} → ${isMoving ? "📳 手机在移动" : "📴 静止"}`;
+        `加速度: x=${x.toFixed(2)}, y=${y.toFixed(2)}, z=${z.toFixed(2)} → ${isMoving ? "📳 手机在快速移动" : "📴 "}`;
     });
 
     // 判断是否抬起手机、屏幕朝向
@@ -52,17 +52,17 @@
       if (beta > 45) {
         position = "📲 手机可能被抬起（垂直）";
       } else if (Math.abs(gamma) < 10 && Math.abs(beta) < 10) {
-        position = "🛌 手机平放";
+        position = "┯━┯ 手机平放";
       } else if (gamma > 45) {
         position = "↪️ 手机朝右";
       } else if (gamma < -45) {
         position = "↩️ 手机朝左";
       } else {
-        position = "📐 未知方向";
+        position = "手机被抬起";
       }
 
       document.getElementById("orientation").textContent =
-        `🧭 方向: beta=${beta?.toFixed(1)}, gamma=${gamma?.toFixed(1)} → ${position}`;
+        `方向: beta=${beta?.toFixed(1)}, gamma=${gamma?.toFixed(1)} → ${position}`;
     });
   </script>
 </body>
