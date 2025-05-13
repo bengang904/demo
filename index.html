@@ -13,8 +13,8 @@
 <body>
   <h1>监测用户设备状态</h1>
   <p id="battery">🔋 电池状态: 检测中...</p>
-  <p id="motion">📳 运动状态: 检测中...</p>
-  <p id="orientation">📐 方向状态: 检测中...</p>
+  <p id="motion">运动状态: 检测中...</p>
+  <p id="orientation">方向状态: 检测中...</p>
 
   <script>
     // 电池状态（每秒更新）
@@ -44,7 +44,7 @@
       const isMoving = total > 1.5;
 
       document.getElementById("motion").textContent =
-        isMoving ? "📳 手机正在移动" : "📴 手机静止";
+        isMoving ? "📳 手机正在移动" : "手机接近静止";
     });
 
     // 判断方向状态
@@ -62,7 +62,7 @@
       } else if (gamma < -45) {
         position = "↩️ 手机朝左";
       } else {
-        position = "📐 手机处于斜向姿态";
+        position = "手机斜着举起";
       }
 
       document.getElementById("orientation").textContent = position;
