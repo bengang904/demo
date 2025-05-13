@@ -13,17 +13,21 @@
 <body>
   <h1>监测用户设备状态</h1>
   <p id="battery">🔋 电池状态: 检测中...</p>
-  <p id="motion">加速度: 检测中...</p>
-  <p id="orientation">方向感应: 检测中...</p>
+  <p id="motion">📳 运动状态: 检测中...</p>
+  <p id="orientation">📐 方向状态: 检测中...</p>
 
   <script>
-    // 电池状态
+    // 电池状态（每秒更新）
     if (navigator.getBattery) {
       navigator.getBattery().then(battery => {
-        const level = Math.round(battery.level * 100);
-        const emoji = level >= 80 ? "🔋" : level >= 40 ? "🔌" : "🪫";
-        document.getElementById("battery").textContent =
-          `${emoji} 电池电量: ${level}%，充电中: ${battery.charging ? "是 ✅" : "否 ❌"}`;
+        function updateBatteryInfo() {
+          const level = Math.round(battery.level * 100);
+          const emoji = level >= 80 ? "🔋" : level >= 40 ? "🔌" : "🪫";
+          document.getElementById("battery").textContent =
+            `${emoji} 电池电量: ${level}%，充电中: ${battery.charging ? "是 ✅" : "否 ❌"}`;
+        }
+        updateBatteryInfo();
+        setInterval(updateBatteryInfo, 1000);
       }).catch(() => {
         document.getElementById("battery").textContent = "⚠️ 无法获取电池信息";
       });
@@ -37,20 +41,20 @@
       const y = event.acceleration.y || 0;
       const z = event.acceleration.z || 0;
       const total = Math.sqrt(x * x + y * y + z * z);
+      const isMoving = total > 1.5;
 
-      const isMoving = total > 1.5; // 简单阈值判断是否移动
       document.getElementById("motion").textContent =
-        `加速度: x=${x.toFixed(2)}, y=${y.toFixed(2)}, z=${z.toFixed(2)} → ${isMoving ? "📳 手机在快速移动" : "手机接近于静止"}`;
+        isMoving ? "📳 手机正在移动" : "📴 手机静止";
     });
 
-    // 判断是否抬起手机、屏幕朝向
+    // 判断方向状态
     window.addEventListener("deviceorientation", (event) => {
-      const beta = event.beta; // 前后倾斜（-180 到 180）
-      const gamma = event.gamma; // 左右倾斜（-90 到 90）
+      const beta = event.beta;
+      const gamma = event.gamma;
       let position = "";
 
       if (beta > 45) {
-        position = "📲 手机可能被抬起（垂直）";
+        position = "📲 手机竖直抬起";
       } else if (Math.abs(gamma) < 10 && Math.abs(beta) < 10) {
         position = "┯━┯ 手机平放";
       } else if (gamma > 45) {
@@ -58,11 +62,10 @@
       } else if (gamma < -45) {
         position = "↩️ 手机朝左";
       } else {
-        position = "手机被抬起";
+        position = "📐 手机处于斜向姿态";
       }
 
-      document.getElementById("orientation").textContent =
-        `方向: beta=${beta?.toFixed(1)}, gamma=${gamma?.toFixed(1)} → ${position}`;
+      document.getElementById("orientation").textContent = position;
     });
   </script>
 </body>
