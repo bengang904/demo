@@ -54,13 +54,13 @@
       let position = "";
 
       if (beta > 45) {
-        position = "📲 手机竖直抬起";
+        position = "手机竖直抬起";
       } else if (Math.abs(gamma) < 10 && Math.abs(beta) < 10) {
-        position = "┯━┯ 手机平放";
+        position = "┯┯ 手机平放";
       } else if (gamma > 45) {
-        position = "↪️ 手机朝右";
+        position = "手机横屏朝右";
       } else if (gamma < -45) {
-        position = "↩️ 手机朝左";
+        position = "手机横屏朝左";
       } else {
         position = "手机斜着举起";
       }
