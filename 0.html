@@ -1,45 +1,139 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>环境光传感器示例</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>摄像头手势识别</title>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
+    html, body {
+    margin: 0;
+    padding: 0;
+    background-color: black;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
     }
-    #lux {
-      font-size: 2em;
-      color: green;
+
+    #video, #canvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* 水平 + 垂直居中 */
+    object-fit: contain;
     }
+
+    #video {
+    display: none; /* 设置为 block 可调试视频 */
+    }
+
+    #canvas {
+    pointer-events: none;
+    z-index: 10;
+    }
+
   </style>
 </head>
 <body>
-  <h1>📡 环境光传感器</h1>
-  <p>当前光照强度：<span id="lux">检测中...</span> lux</p>
-  <p id="status"></p>
 
-  <script>
-    const luxElement = document.getElementById('lux');
-    const status = document.getElementById('status');
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
 
-    if ('AmbientLightSensor' in window) {
-      try {
-        const sensor = new AmbientLightSensor();
-        sensor.addEventListener('reading', () => {
-          luxElement.textContent = sensor.illuminance.toFixed(2);
-        });
-        sensor.addEventListener('error', event => {
-          status.textContent = `⚠️ 传感器错误：${event.error.name}`;
-        });
-        sensor.start();
-        status.textContent = '✅ 已启动环境光传感器';
-      } catch (err) {
-        status.textContent = `❌ 启动失败：${err.message}`;
-      }
-    } else {
-      status.textContent = '❌ 当前浏览器不支持 Ambient Light Sensor API';
+<!-- TensorFlow & HandPose Detection -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
+
+<script>
+  async function setupCamera() {
+    const video = document.getElementById("video");
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    return new Promise((resolve) => {
+      video.onloadedmetadata = () => resolve(video);
+    });
+  }
+
+  async function initialize() {
+    const video = await setupCamera();
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const model = handPoseDetection.SupportedModels.MediaPipeHands;
+    const detector = await handPoseDetection.createDetector(model, {
+      runtime: "mediapipe",
+      modelType: "full",
+      solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands"
+    });
+
+    function resizeElements() {
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      video.width = vw;
+      video.height = vh;
+      canvas.width = vw;
+      canvas.height = vh;
+
+      video.style.width = vw + 'px';
+      video.style.height = vh + 'px';
+      canvas.style.width = vw + 'px';
+      canvas.style.height = vh + 'px';
     }
-  </script>
+
+    function drawLandmarks(landmarks) {
+      // 骨骼连线定义
+      const bones = [
+        [0,1],[1,2],[2,3],[3,4],
+        [0,5],[5,6],[6,7],[7,8],
+        [0,9],[9,10],[10,11],[11,12],
+        [0,13],[13,14],[14,15],[15,16],
+        [0,17],[17,18],[18,19],[19,20]
+      ];
+
+      // 连线
+      ctx.strokeStyle = "blue";
+      ctx.lineWidth = 2;
+      bones.forEach(([a, b]) => {
+        const p1 = landmarks[a];
+        const p2 = landmarks[b];
+        if (p1 && p2) {
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        }
+      });
+
+      // 点位
+      ctx.fillStyle = "red";
+      landmarks.forEach(pt => {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    async function render() {
+      if (video.videoWidth && video.videoHeight) {
+        resizeElements();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const hands = await detector.estimateHands(video, { flipHorizontal: false });
+        if (hands.length > 0) {
+          hands.forEach(hand => {
+            if (hand.keypoints) drawLandmarks(hand.keypoints);
+          });
+        }
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    render();
+  }
+
+  initialize();
+</script>
+
 </body>
 </html>
