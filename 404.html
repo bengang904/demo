@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>没有找到哦！！😂</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f0f0f0;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        .error {
+            margin: 20px;
+            background: #fff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        .error h1 {
+            font-size: 100px;
+            margin: 0;
+            color: #ff6b6b;
+            animation: bounce 1s infinite alternate;
+        }
+
+        .error p {
+            font-size: 20px;
+            margin: 20px 0;
+            color: #333;
+        }
+
+        .home-link {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 18px;
+            color: #fff;
+            background: #ff6b6b;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background 0.3s ease;
+        }
+
+        .home-link:hover {
+            background: #ff4757;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes bounce {
+            from {
+                transform: translateY(0);
+            }
+            to {
+                transform: translateY(-10px);
+            }
+        }
+        div, p, a {
+            font-family: 'ZCOOL KuaiLe', sans-serif;
+        } 
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error">
+            <h1>404</h1>
+            <p>哎呀！找不到您要查找的页面或资源。可能已经被删除，或者链接拼写存在错误。😂😂</p>
+            <a href="/" class="home-link">返回首页</a>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('404 Page Loaded');
+        });
+    </script>
+</body>
+</html>
