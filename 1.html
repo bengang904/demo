@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>屏幕方向控制示例</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    button {
+      font-size: 16px;
+      padding: 10px 20px;
+      margin: 10px;
+      cursor: pointer;
+    }
+    #status {
+      font-size: 18px;
+      margin-top: 20px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Screen Orientation API 示例</h1>
+  <button onclick="lockOrientation('landscape')">锁定横屏</button>
+  <button onclick="lockOrientation('portrait')">锁定竖屏</button>
+
+  <div id="status">当前方向：检测中...</div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+
+    // 更新当前方向显示
+    function updateOrientationStatus() {
+      if (screen.orientation) {
+        statusEl.textContent = "当前方向：" + screen.orientation.type;
+      } else {
+        statusEl.textContent = "当前浏览器不支持 Screen Orientation API";
+      }
+    }
+
+    // 锁定屏幕方向
+    function lockOrientation(orientation) {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock(orientation)
+          .then(() => {
+            statusEl.textContent = "已锁定为：" + orientation;
+          })
+          .catch(err => {
+            statusEl.textContent = "锁定失败：" + err.message;
+          });
+      } else {
+        statusEl.textContent = "你的浏览器不支持锁定屏幕方向";
+      }
+    }
+
+    // 初始更新
+    updateOrientationStatus();
+
+    // 监听方向变化
+    if (screen.orientation) {
+      screen.orientation.addEventListener("change", updateOrientationStatus);
+    }
+  </script>
+</body>
+</html>
