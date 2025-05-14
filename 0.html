@@ -5,32 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>摄像头手势识别</title>
   <style>
-    html, body {
+  html, body {
     margin: 0;
     padding: 0;
     background-color: black;
     overflow: hidden;
     height: 100%;
     width: 100%;
-    }
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+  }
 
-    #video, #canvas {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); /* 水平 + 垂直居中 */
+  #video, #canvas {
     object-fit: contain;
-    }
+    transform: scaleX(-1); /* 水平镜像 */
+  }
 
-    #video {
-    display: none; /* 设置为 block 可调试视频 */
-    }
+  #video {
+    display: none; 
+  }
 
-    #canvas {
+  #canvas {
     pointer-events: none;
     z-index: 10;
-    }
-
+  }
   </style>
 </head>
 <body>
