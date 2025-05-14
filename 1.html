@@ -1,68 +1,144 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>屏幕方向控制示例</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 50px;
-    }
-    button {
-      font-size: 16px;
-      padding: 10px 20px;
-      margin: 10px;
-      cursor: pointer;
-    }
-    #status {
-      font-size: 18px;
-      margin-top: 20px;
-      color: #333;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手机运动轨迹计算</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            text-align: center;
+        }
+
+        .output {
+            margin-top: 20px;
+        }
+
+        .output p {
+            font-size: 18px;
+        }
+
+        #status {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        canvas {
+            margin-top: 20px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+        }
+    </style>
 </head>
 <body>
-  <h1>Screen Orientation API 示例</h1>
-  <button onclick="lockOrientation('landscape')">锁定横屏</button>
-  <button onclick="lockOrientation('portrait')">锁定竖屏</button>
+    <h1>手机运动轨迹计算</h1>
+    <div class="output">
+        <p>当前位置: <span id="position"></span></p>
+        <p>速度: <span id="velocity"></span></p>
+        <p>加速度: <span id="acceleration"></span></p>
+    </div>
+    <div id="status">等待传感器数据...</div>
 
-  <div id="status">当前方向：检测中...</div>
+    <canvas id="motionCanvas" width="600" height="400"></canvas>
 
-  <script>
-    const statusEl = document.getElementById('status');
+    <script>
+        let acceleration = { x: 0, y: 0, z: 0 }; // 初始加速度
+        let velocity = { x: 0, y: 0, z: 0 }; // 初始速度
+        let position = { x: 300, y: 200, z: 0 }; // 初始位置，中心点
+        let previousTime = Date.now();
+        let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 }; // 设备角度
 
-    // 更新当前方向显示
-    function updateOrientationStatus() {
-      if (screen.orientation) {
-        statusEl.textContent = "当前方向：" + screen.orientation.type;
-      } else {
-        statusEl.textContent = "当前浏览器不支持 Screen Orientation API";
-      }
-    }
+        let canvas = document.getElementById('motionCanvas');
+        let ctx = canvas.getContext('2d');
+        let trajectory = [];  // 存储轨迹点
 
-    // 锁定屏幕方向
-    function lockOrientation(orientation) {
-      if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock(orientation)
-          .then(() => {
-            statusEl.textContent = "已锁定为：" + orientation;
-          })
-          .catch(err => {
-            statusEl.textContent = "锁定失败：" + err.message;
-          });
-      } else {
-        statusEl.textContent = "你的浏览器不支持锁定屏幕方向";
-      }
-    }
+        // 获取加速度和陀螺仪数据
+        function startMotionTracking() {
+            if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', handleMotion, false);
+            } else {
+                alert("设备不支持加速度传感器");
+            }
 
-    // 初始更新
-    updateOrientationStatus();
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', handleOrientation, false);
+            } else {
+                alert("设备不支持陀螺仪传感器");
+            }
+        }
 
-    // 监听方向变化
-    if (screen.orientation) {
-      screen.orientation.addEventListener("change", updateOrientationStatus);
-    }
-  </script>
+        // 处理加速度数据
+        function handleMotion(event) {
+            let currentTime = Date.now();
+            let deltaTime = (currentTime - previousTime) / 1000; // 时间间隔（秒）
+
+            // 获取加速度数据
+            acceleration.x = event.acceleration.x || 0;
+            acceleration.y = event.acceleration.y || 0;
+            acceleration.z = event.acceleration.z || 0;
+
+            // 计算速度（积分加速度）
+            velocity.x += acceleration.x * deltaTime;
+            velocity.y += acceleration.y * deltaTime;
+            velocity.z += acceleration.z * deltaTime;
+
+            // 计算位置（积分速度）
+            position.x += velocity.x * deltaTime;
+            position.y += velocity.y * deltaTime;
+            position.z += velocity.z * deltaTime;
+
+            // 更新轨迹
+            trajectory.push({ x: position.x, y: position.y });
+
+            // 清除画布并绘制新的轨迹
+            drawTrajectory();
+
+            previousTime = currentTime;
+
+            // 更新页面显示
+            document.getElementById('position').textContent = `X: ${position.x.toFixed(2)} m, Y: ${position.y.toFixed(2)} m`;
+            document.getElementById('velocity').textContent = `X: ${velocity.x.toFixed(2)} m/s, Y: ${velocity.y.toFixed(2)} m/s, Z: ${velocity.z.toFixed(2)} m/s`;
+            document.getElementById('acceleration').textContent = `X: ${acceleration.x.toFixed(2)} m/s², Y: ${acceleration.y.toFixed(2)} m/s², Z: ${acceleration.z.toFixed(2)} m/s²`;
+        }
+
+        // 处理设备方向数据（陀螺仪）
+        function handleOrientation(event) {
+            deviceOrientation.alpha = event.alpha;  // 绕Z轴旋转角度（0 - 360）
+            deviceOrientation.beta = event.beta;    // 绕X轴旋转角度（-180 - 180）
+            deviceOrientation.gamma = event.gamma;  // 绕Y轴旋转角度（-90 - 90）
+
+            // 你可以在这里使用旋转数据来进一步处理加速度数据，校正移动方向
+        }
+
+        // 绘制轨迹
+        function drawTrajectory() {
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制轨迹点
+            ctx.beginPath();
+            ctx.moveTo(trajectory[0].x + 300, trajectory[0].y + 200); // 设置起始点
+
+            for (let i = 1; i < trajectory.length; i++) {
+                ctx.lineTo(trajectory[i].x + 300, trajectory[i].y + 200); // 绘制线条
+            }
+
+            ctx.strokeStyle = 'blue';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // 启动运动追踪
+        startMotionTracking();
+
+        // 页面加载完成后，显示一些提示
+        window.onload = function() {
+            document.getElementById('status').textContent = "设备传感器已开始工作...";
+        }
+    </script>
 </body>
 </html>
