@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全景图展示</title>
+    <title>全景图</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css" />
     <style>
         body, html {
@@ -44,7 +44,7 @@
 
     <!-- 全屏提示弹窗 -->
     <div class="fullscreen-popup" id="fullscreenPopup">
-        请旋转设备到横屏模式查看全景图。
+        正在进入全屏模式...
     </div>
 
     <!-- 引入pannellum库 -->
@@ -66,21 +66,13 @@
             "minPitch": -90        // 最小俯仰角
         });
 
-        // 检测设备是否为手机，并提示全屏
+        // 检测设备是否为手机，并提示进入全屏
         if (/Mobi|Android/i.test(navigator.userAgent)) {
             let fullscreenPopup = document.getElementById('fullscreenPopup');
             fullscreenPopup.style.display = 'flex';
 
-            // 监听设备横竖屏变化，自动切换全屏模式
-            window.addEventListener('orientationchange', function() {
-                if (window.orientation === 90 || window.orientation === -90) {
-                    fullscreenPopup.style.display = 'none';
-                    // 设置为全屏模式
-                    enterFullscreen();
-                } else {
-                    fullscreenPopup.style.display = 'flex'; // 如果竖屏，再次显示提示
-                }
-            });
+            // 直接进入全屏模式
+            enterFullscreen();
         }
 
         // 进入全屏模式的函数
