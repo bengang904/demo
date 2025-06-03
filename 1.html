@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全景图展示</title>
+    <title>全景图</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css" />
     <style>
         body, html {
@@ -28,10 +28,24 @@
     <!-- 引入pannellum库 -->
     <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
     <script>
+        // 获取 URL 中的图像文件参数（例如：?image=pano.webp）
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        // 获取图像文件路径
+        let imageFile = getQueryParam('image');
+
+        // 如果没有图像参数，使用默认的全景图
+        if (!imageFile) {
+            imageFile = 'pano.webp'; // 默认全景图路径
+        }
+
         // 初始化全景图的显示器
         let viewer = pannellum.viewer('panorama', {
             "type": "equirectangular",
-            "panorama": "pano.webp", // 你的全景图文件
+            "panorama": imageFile, // 使用从 URL 获取的图像文件
             "autoLoad": true,
             "showControls": false, // 是否显示控制按钮
             "mouseZoom": true,      // 支持鼠标滚轮缩放
@@ -63,6 +77,5 @@
             }
         }
     </script>
-
 </body>
 </html>
