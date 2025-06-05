@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>GPS路线轨迹</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet 样式和脚本 -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 0; }
+    #map { height: 90vh; }
+    #info { padding: 10px; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <div id="info">
+    <div id="status">📡 正在获取位置并绘制轨迹...</div>
+  </div>
+  <div id="map"></div>
+
+  <script>
+    let map = L.map('map').setView([0, 0], 2); // 初始化地图
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 19
+    }).addTo(map);
+
+    let marker = null;
+    let path = []; // 用于保存所有坐标点
+    let polyline = L.polyline([], { color: 'blue' }).addTo(map);
+
+    function updatePosition(position) {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+      const acc = position.coords.accuracy;
+
+      document.getElementById("status").innerHTML =
+        `纬度 ${lat.toFixed(6)}，经度 ${lon.toFixed(6)}，精度 ±${acc.toFixed(2)} 米`;
+
+      const latlng = [lat, lon];
+      path.push(latlng);
+
+      if (!marker) {
+        marker = L.marker(latlng).addTo(map).bindPopup("📍 您的位置").openPopup();
+        map.setView(latlng, 16);
+      } else {
+        marker.setLatLng(latlng);
+      }
+
+      polyline.setLatLngs(path);
+    }
+
+    function handleError(error) {
+      document.getElementById("status").textContent = "❌ 定位失败：" + error.message;
+    }
+
+    function startTracking() {
+      if (!navigator.geolocation) {
+        document.getElementById("status").textContent = "❌ 浏览器不支持地理定位。";
+        return;
+      }
+
+      navigator.geolocation.watchPosition(updatePosition, handleError, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000
+      });
+    }
+
+    window.addEventListener("load", startTracking);
+  </script>
+</body>
+</html>
