@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <title>安全笔记（指纹 / 面容 / PIN / 密码）</title>
+  <title>安全笔记（指纹 / PIN / 密码）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: sans-serif; padding: 20px; }
@@ -39,6 +39,15 @@
     const saveBtn = document.getElementById("saveBtn");
 
     const CORRECT_PASSWORD = "1314";
+    const PASSWORD_KEY = "vaultPassword";
+
+    // 自动读取密码并解锁（可选）
+    window.addEventListener("DOMContentLoaded", () => {
+      const savedPwd = localStorage.getItem(PASSWORD_KEY);
+      if (savedPwd === CORRECT_PASSWORD) {
+        unlockSuccess("✅ 已从保险箱解锁，无需输入密码");
+      }
+    });
 
     function loadNote() {
       const content = localStorage.getItem("note");
@@ -58,7 +67,7 @@
 
     async function requireAuthentication() {
       if (!window.PublicKeyCredential) {
-        statusDiv.innerText = "⚠️ 此设备或浏览器不支持设备验证。请使用支持 WebAuthn 的浏览器。";
+        statusDiv.innerText = "⚠️ 此设备或浏览器不支持设备验证。";
         return;
       }
 
@@ -85,7 +94,9 @@
     function passwordLogin() {
       const input = passwordInput.value.trim();
       if (input === CORRECT_PASSWORD) {
-        unlockSuccess("✅ 密码正确，已解锁笔记。");
+        // 存入“保险箱”
+        localStorage.setItem(PASSWORD_KEY, input);
+        unlockSuccess("✅ 密码正确，已解锁并保存到保险箱。");
       } else {
         statusDiv.innerText = "❌ 密码错误，请重试。";
       }
