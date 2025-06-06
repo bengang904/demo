@@ -5,7 +5,7 @@
   <title>简单 WebAuthn 示例</title>
 </head>
 <body>
-  <h2>WebAuthn 注册和登录示例</h2>
+  <h2>WebAuthn 注册和登录示例1</h2>
 
   <button id="registerBtn">注册</button>
   <button id="loginBtn">登录</button>
@@ -35,7 +35,6 @@
       return buffer;
     }
 
-    // 伪造服务器生成的注册选项
     async function getRegisterOptions() {
       return {
         publicKey: {
@@ -47,8 +46,8 @@
             displayName: "示例用户"
           },
           pubKeyCredParams: [
-            { type: "public-key", alg: -7 },  // ES256
-            { type: "public-key", alg: -257 } // RS256
+            { type: "public-key", alg: -7 },  
+            { type: "public-key", alg: -257 }
           ],
           timeout: 60000,
           attestation: "direct"
@@ -56,12 +55,22 @@
       };
     }
 
-    // 伪造服务器生成的登录选项
+    // 这里从 localStorage 读存储的 Credential ID，放入 allowCredentials
     async function getLoginOptions() {
+      const storedCredentialId = localStorage.getItem('credentialId');
+      let allowCredentials = [];
+      if (storedCredentialId) {
+        allowCredentials = [{
+          type: 'public-key',
+          id: base64UrlToBuffer(storedCredentialId),
+          // transports 可选，比如 ['usb', 'nfc', 'ble', 'internal']
+        }];
+      }
+
       return {
         publicKey: {
           challenge: Uint8Array.from(window.crypto.getRandomValues(new Uint8Array(32))),
-          allowCredentials: [], // 这里可填之前注册的凭证ID
+          allowCredentials,
           timeout: 60000,
           userVerification: "preferred"
         }
@@ -73,15 +82,15 @@
       try {
         const options = await getRegisterOptions();
 
-        // 调用WebAuthn API创建凭证
         const credential = await navigator.credentials.create(options);
 
-        // 简单显示凭证信息
-        const attestationObject = credential.response.attestationObject;
-        const clientDataJSON = credential.response.clientDataJSON;
         const rawId = credential.rawId;
+        const credentialIdBase64 = bufferToBase64Url(rawId);
 
-        output.textContent = `注册成功!\nCredential ID: ${bufferToBase64Url(rawId)}\n`;
+        // 存储 Credential ID 到 localStorage
+        localStorage.setItem('credentialId', credentialIdBase64);
+
+        output.textContent = `注册成功!\nCredential ID 已存储。\nID: ${credentialIdBase64}`;
       } catch (e) {
         output.textContent = '注册失败: ' + e;
       }
@@ -92,17 +101,12 @@
       try {
         const options = await getLoginOptions();
 
-        // 调用WebAuthn API获取凭证
         const assertion = await navigator.credentials.get(options);
 
-        // 显示凭证信息
-        const authData = assertion.response.authenticatorData;
-        const clientDataJSON = assertion.response.clientDataJSON;
-        const signature = assertion.response.signature;
-        const userHandle = assertion.response.userHandle;
         const rawId = assertion.rawId;
+        const credentialIdBase64 = bufferToBase64Url(rawId);
 
-        output.textContent = `登录成功!\nCredential ID: ${bufferToBase64Url(rawId)}\n`;
+        output.textContent = `登录成功!\nCredential ID: ${credentialIdBase64}`;
       } catch (e) {
         output.textContent = '登录失败: ' + e;
       }
