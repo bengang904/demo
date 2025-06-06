@@ -1,119 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>食指画画</title>
-  <style>
-    html, body {
-      margin: 0; padding: 0; overflow: hidden;
-      background-color: black; height: 100%; width: 100%;
-    }
-    video, canvas {
-      position: absolute;
-      top: 0; left: 0;
-      transform: scaleX(-1); /* 镜像 */
-    }
-    #video {
-      display: none;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拼图游戏</title>
+    <style>
+       
+    </style>
 </head>
 <body>
 
-<video id="video" autoplay playsinline></video>
-<canvas id="drawCanvas"></canvas>
-<canvas id="overlayCanvas"></canvas>
-
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
-
-<script>
-  const video = document.getElementById("video");
-  const drawCanvas = document.getElementById("drawCanvas");
-  const overlayCanvas = document.getElementById("overlayCanvas");
-  const drawCtx = drawCanvas.getContext("2d");
-  const overlayCtx = overlayCanvas.getContext("2d");
-
-  let lastX = null, lastY = null;
-
-  async function setupCamera() {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
-    return new Promise((resolve) => {
-      video.onloadedmetadata = () => resolve(video);
-    });
-  }
-
-  function resizeCanvas() {
-    const vw = video.videoWidth;
-    const vh = video.videoHeight;
-    drawCanvas.width = overlayCanvas.width = vw;
-    drawCanvas.height = overlayCanvas.height = vh;
-    drawCanvas.style.width = overlayCanvas.style.width = vw + 'px';
-    drawCanvas.style.height = overlayCanvas.style.height = vh + 'px';
-  }
-
-  async function initialize() {
-    await setupCamera();
-
-    const model = handPoseDetection.SupportedModels.MediaPipeHands;
-    const detector = await handPoseDetection.createDetector(model, {
-      runtime: "mediapipe",
-      modelType: "full",
-      solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands"
-    });
-
-    function drawLandmarks(landmarks) {
-      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-      overlayCtx.fillStyle = "red";
-      landmarks.forEach(pt => {
-        overlayCtx.beginPath();
-        overlayCtx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
-        overlayCtx.fill();
-      });
-    }
-
-    async function render() {
-      if (video.videoWidth && video.videoHeight) resizeCanvas();
-
-      const hands = await detector.estimateHands(video, { flipHorizontal: false });
-
-      if (hands.length > 0 && hands[0].keypoints) {
-        const points = hands[0].keypoints;
-        drawLandmarks(points);
-
-        const indexTip = points[8]; // 食指指尖
-        if (indexTip) {
-          const x = indexTip.x;
-          const y = indexTip.y;
-
-          if (lastX !== null && lastY !== null) {
-            drawCtx.strokeStyle = "cyan";
-            drawCtx.lineWidth = 4;
-            drawCtx.beginPath();
-            drawCtx.moveTo(lastX, lastY);
-            drawCtx.lineTo(x, y);
-            drawCtx.stroke();
-          }
-
-          lastX = x;
-          lastY = y;
-        }
-      } else {
-        lastX = lastY = null;
-        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-      }
-
-      requestAnimationFrame(render);
-    }
-
-    render();
-  }
-
-  initialize();
-</script>
+   
+    <iframe src="https://www.jigsawplanet.com/?rc=play&amp;pid=00e3f4fbe43c&amp;view=iframe&amp;bgcolor=0xff9e9e" style="width:100%;height:600px" frameborder="0" allowfullscreen></iframe>
 
 </body>
 </html>
