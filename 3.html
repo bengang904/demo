@@ -1,76 +1,119 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <title>AR Object Box</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>食指画画</title>
   <style>
-    body { margin: 0; overflow: hidden; }
-    video, canvas { position: absolute; top: 0; left: 0; }
+    html, body {
+      margin: 0; padding: 0; overflow: hidden;
+      background-color: black; height: 100%; width: 100%;
+    }
+    video, canvas {
+      position: absolute;
+      top: 0; left: 0;
+      transform: scaleX(-1); /* 镜像 */
+    }
+    #video {
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <video id="video" width="640" height="480" autoplay muted playsinline></video>
 
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<video id="video" autoplay playsinline></video>
+<canvas id="drawCanvas"></canvas>
+<canvas id="overlayCanvas"></canvas>
 
-  <script>
-    const video = document.getElementById('video');
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
 
-    // 1. 启动摄像头
-    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-      video.srcObject = stream;
+<script>
+  const video = document.getElementById("video");
+  const drawCanvas = document.getElementById("drawCanvas");
+  const overlayCanvas = document.getElementById("overlayCanvas");
+  const drawCtx = drawCanvas.getContext("2d");
+  const overlayCtx = overlayCanvas.getContext("2d");
+
+  let lastX = null, lastY = null;
+
+  async function setupCamera() {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    return new Promise((resolve) => {
+      video.onloadedmetadata = () => resolve(video);
+    });
+  }
+
+  function resizeCanvas() {
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    drawCanvas.width = overlayCanvas.width = vw;
+    drawCanvas.height = overlayCanvas.height = vh;
+    drawCanvas.style.width = overlayCanvas.style.width = vw + 'px';
+    drawCanvas.style.height = overlayCanvas.style.height = vh + 'px';
+  }
+
+  async function initialize() {
+    await setupCamera();
+
+    const model = handPoseDetection.SupportedModels.MediaPipeHands;
+    const detector = await handPoseDetection.createDetector(model, {
+      runtime: "mediapipe",
+      modelType: "full",
+      solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands"
     });
 
-    // 2. 初始化 Three.js
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(70, 640 / 480, 0.01, 1000);
-    camera.position.z = 2;
-
-    const renderer = new THREE.WebGLRenderer({ alpha: true });
-    renderer.setSize(640, 480);
-    document.body.appendChild(renderer.domElement);
-
-    // 占位盒子
-    const geometry = new THREE.BoxGeometry(1, 1, 0.1);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-    const box = new THREE.Mesh(geometry, material);
-    scene.add(box);
-    box.visible = false;
-
-    // 3. 加载物体检测模型
-    let model;
-    cocoSsd.load().then(loadedModel => {
-      model = loadedModel;
-      detectFrame();
-    });
-
-    // 4. 检测物体并更新盒子位置
-    function detectFrame() {
-      if (!model) return;
-      model.detect(video).then(predictions => {
-        const person = predictions.find(p => p.class === 'person' && p.score > 0.6);
-        if (person) {
-          box.visible = true;
-          // 将 2D 坐标映射为 Three.js 空间中坐标（简化映射）
-          const [x, y, width, height] = person.bbox;
-          box.scale.set(width / 200, height / 200, 0.1);
-          box.position.x = (x - 320 + width / 2) / 320;
-          box.position.y = -(y - 240 + height / 2) / 240;
-        } else {
-          box.visible = false;
-        }
-        requestAnimationFrame(detectFrame);
+    function drawLandmarks(landmarks) {
+      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+      overlayCtx.fillStyle = "red";
+      landmarks.forEach(pt => {
+        overlayCtx.beginPath();
+        overlayCtx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+        overlayCtx.fill();
       });
     }
 
-    // 5. 动画循环
-    function animate() {
-      requestAnimationFrame(animate);
-      renderer.render(scene, camera);
+    async function render() {
+      if (video.videoWidth && video.videoHeight) resizeCanvas();
+
+      const hands = await detector.estimateHands(video, { flipHorizontal: false });
+
+      if (hands.length > 0 && hands[0].keypoints) {
+        const points = hands[0].keypoints;
+        drawLandmarks(points);
+
+        const indexTip = points[8]; // 食指指尖
+        if (indexTip) {
+          const x = indexTip.x;
+          const y = indexTip.y;
+
+          if (lastX !== null && lastY !== null) {
+            drawCtx.strokeStyle = "cyan";
+            drawCtx.lineWidth = 4;
+            drawCtx.beginPath();
+            drawCtx.moveTo(lastX, lastY);
+            drawCtx.lineTo(x, y);
+            drawCtx.stroke();
+          }
+
+          lastX = x;
+          lastY = y;
+        }
+      } else {
+        lastX = lastY = null;
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+      }
+
+      requestAnimationFrame(render);
     }
-    animate();
-  </script>
+
+    render();
+  }
+
+  initialize();
+</script>
+
 </body>
 </html>
