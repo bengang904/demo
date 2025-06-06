@@ -1,112 +1,101 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <title>简单 WebAuthn 示例</title>
+  <meta charset="UTF-8">
+  <title>WebAuthn 示例</title>
 </head>
 <body>
-  <h2>WebAuthn 注册和登录示例</h2>
+  <h2>WebAuthn 示例</h2>
 
-  <button id="registerBtn">注册</button>
-  <button id="loginBtn">登录</button>
+  <button onclick="register()">注册</button>
+  <button onclick="login()">登录</button>
 
-  <div id="output" style="white-space: pre-wrap; margin-top: 20px;"></div>
+  <pre id="output"></pre>
 
   <script>
     const output = document.getElementById('output');
 
-    // 将 ArrayBuffer 转为 Base64Url 字符串
-    function bufferToBase64Url(buffer) {
-      return btoa(String.fromCharCode(...new Uint8Array(buffer)))
-        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    // 模拟从后端获取 challenge 的函数（真实情况应通过 fetch 获取）
+    async function getChallenge() {
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      return array;
     }
 
-    // 将 Base64Url 字符串转为 ArrayBuffer
-    function base64UrlToBuffer(base64url) {
-      base64url = base64url.replace(/-/g, '+').replace(/_/g, '/');
-      const padLength = (4 - (base64url.length % 4)) % 4;
-      base64url += '='.repeat(padLength);
-      const str = atob(base64url);
-      const buffer = new ArrayBuffer(str.length);
-      const byteArray = new Uint8Array(buffer);
-      for (let i = 0; i < str.length; i++) {
-        byteArray[i] = str.charCodeAt(i);
-      }
-      return buffer;
-    }
-
-    // 伪造服务器生成的注册选项
-    async function getRegisterOptions() {
-      return {
-        publicKey: {
-          challenge: Uint8Array.from(window.crypto.getRandomValues(new Uint8Array(32))),
-          rp: { name: "示例网站" },
-          user: {
-            id: Uint8Array.from(window.crypto.getRandomValues(new Uint8Array(16))),
-            name: "user@example.com",
-            displayName: "示例用户"
-          },
-          pubKeyCredParams: [
-            { type: "public-key", alg: -7 },  // ES256
-            { type: "public-key", alg: -257 } // RS256
-          ],
-          timeout: 60000,
-          attestation: "direct"
+    // Base64 编解码工具
+    const base64url = {
+      encode: (buffer) => {
+        return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      },
+      decode: (str) => {
+        str = str.replace(/-/g, '+').replace(/_/g, '/');
+        const pad = str.length % 4 === 0 ? '' : '='.repeat(4 - (str.length % 4));
+        const binary = atob(str + pad);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
         }
-      };
-    }
+        return bytes.buffer;
+      }
+    };
 
-    // 伪造服务器生成的登录选项
-    async function getLoginOptions() {
-      return {
-        publicKey: {
-          challenge: Uint8Array.from(window.crypto.getRandomValues(new Uint8Array(32))),
-          allowCredentials: [], // 这里可填之前注册的凭证ID
-          timeout: 60000,
+    async function register() {
+      const challenge = await getChallenge();
+      const publicKey = {
+        challenge,
+        rp: {
+          name: "示例网站"
+        },
+        user: {
+          id: new Uint8Array(16), // 实际应是用户唯一ID
+          name: "user@example.com",
+          displayName: "示例用户"
+        },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 }, // ES256
+        ],
+        authenticatorSelection: {
           userVerification: "preferred"
-        }
+        },
+        timeout: 60000,
+        attestation: "none"
       };
+
+      try {
+        const credential = await navigator.credentials.create({ publicKey });
+        output.innerText = "注册成功！凭据ID:\n" +
+          base64url.encode(credential.rawId);
+        // 实际应将凭据发送到服务器进行验证和存储
+      } catch (err) {
+        output.innerText = "注册失败: " + err;
+      }
     }
 
-    document.getElementById('registerBtn').addEventListener('click', async () => {
-      output.textContent = '注册中...';
+    async function login() {
+      const challenge = await getChallenge();
+      const credentialId = prompt("请输入注册时的凭据ID（base64url 编码）");
+      if (!credentialId) return;
+
+      const publicKey = {
+        challenge,
+        allowCredentials: [{
+          id: base64url.decode(credentialId),
+          type: "public-key"
+        }],
+        timeout: 60000,
+        userVerification: "preferred"
+      };
+
       try {
-        const options = await getRegisterOptions();
-
-        // 调用WebAuthn API创建凭证
-        const credential = await navigator.credentials.create(options);
-
-        // 简单显示凭证信息
-        const attestationObject = credential.response.attestationObject;
-        const clientDataJSON = credential.response.clientDataJSON;
-        const rawId = credential.rawId;
-
-        output.textContent = `注册成功!\nCredential ID: ${bufferToBase64Url(rawId)}\n`;
-      } catch (e) {
-        output.textContent = '注册失败: ' + e;
+        const assertion = await navigator.credentials.get({ publicKey });
+        output.innerText = "登录成功！凭据ID:\n" +
+          base64url.encode(assertion.rawId);
+        // 实际应将 assertion.response 发送给服务器进行验证
+      } catch (err) {
+        output.innerText = "登录失败: " + err;
       }
-    });
-
-    document.getElementById('loginBtn').addEventListener('click', async () => {
-      output.textContent = '登录中...';
-      try {
-        const options = await getLoginOptions();
-
-        // 调用WebAuthn API获取凭证
-        const assertion = await navigator.credentials.get(options);
-
-        // 显示凭证信息
-        const authData = assertion.response.authenticatorData;
-        const clientDataJSON = assertion.response.clientDataJSON;
-        const signature = assertion.response.signature;
-        const userHandle = assertion.response.userHandle;
-        const rawId = assertion.rawId;
-
-        output.textContent = `登录成功!\nCredential ID: ${bufferToBase64Url(rawId)}\n`;
-      } catch (e) {
-        output.textContent = '登录失败: ' + e;
-      }
-    });
+    }
   </script>
 </body>
 </html>
