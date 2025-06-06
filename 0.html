@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>手势绘画</title>
+  <title>实时手势绘画</title>
   <style>
   html, body {
     margin: 0;
@@ -85,8 +85,10 @@
       [0,17],[17,18],[18,19],[19,20]
     ];
 
-    let drawingPoints = [];
-    let recentPoints = [];
+    let leftHandPoints = [];
+    let rightHandPoints = [];
+    let recentLeftPoints = [];
+    let recentRightPoints = [];
     const SMOOTHING_WINDOW = 5;
 
     const MAX_NO_HAND_FRAMES = 10;
@@ -96,7 +98,7 @@
       return Math.sqrt((a.x - b.x)**2 + (a.y - b.y)**2);
     }
 
-    function smoothPoint(newPt) {
+    function smoothPoint(newPt, recentPoints) {
       recentPoints.push(newPt);
       if (recentPoints.length > SMOOTHING_WINDOW) recentPoints.shift();
       const avgX = recentPoints.reduce((sum,p)=>sum+p.x,0)/recentPoints.length;
@@ -126,16 +128,16 @@
       });
     }
 
-    function drawCurve() {
-      if (drawingPoints.length < 2) return;
-      ctx.strokeStyle = "lime";
+    function drawCurve(points, color) {
+      if (points.length < 2) return;
+      ctx.strokeStyle = color;
       ctx.lineWidth = 4;
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
       ctx.beginPath();
-      ctx.moveTo(drawingPoints[0].x, drawingPoints[0].y);
-      for(let i=1; i<drawingPoints.length; i++) {
-        ctx.lineTo(drawingPoints[i].x, drawingPoints[i].y);
+      ctx.moveTo(points[0].x, points[0].y);
+      for(let i=1; i<points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
       }
       ctx.stroke();
     }
@@ -154,31 +156,41 @@
           hands.forEach(hand => {
             if (hand.keypoints) drawLandmarks(hand.keypoints);
 
-            const tip = hand.keypoints.find(p => p.name === "index_finger_tip");
-            const dip = hand.keypoints.find(p => p.name === "index_finger_dip");
-
-            if (tip && dip) {
-              if (dist(tip, dip) > 10) {
-                let smoothTip = smoothPoint({x: tip.x, y: tip.y});
-
-                if (drawingPoints.length === 0 || dist(smoothTip, drawingPoints[drawingPoints.length-1]) < 50) {
-                  drawingPoints.push(smoothTip);
+            // 获取食指指尖位置（landmark 8）
+            const tip = hand.keypoints[8]; // 食指指尖是第 8 个点（landmark 8）
+            
+            // 根据手的类型分别处理
+            if (tip) {
+              if (hand.handedness === "Left") {
+                let smoothTip = smoothPoint({x: tip.x, y: tip.y}, recentLeftPoints);
+                if (leftHandPoints.length === 0 || dist(smoothTip, leftHandPoints[leftHandPoints.length-1]) < 50) {
+                  leftHandPoints.push(smoothTip);
                 }
-              } else {
-                recentPoints = [];
+              } else if (hand.handedness === "Right") {
+                let smoothTip = smoothPoint({x: tip.x, y: tip.y}, recentRightPoints);
+                if (rightHandPoints.length === 0 || dist(smoothTip, rightHandPoints[rightHandPoints.length-1]) < 50) {
+                  rightHandPoints.push(smoothTip);
+                }
               }
             }
           });
+
+          // 绘制左右手的轨迹
+          drawCurve(leftHandPoints, "cyan"); // 左手用青色
+          drawCurve(rightHandPoints, "magenta"); // 右手用品红色
+
         } else {
           noHandFrameCount++;
           if (noHandFrameCount > MAX_NO_HAND_FRAMES) {
-            drawingPoints = [];
-            recentPoints = [];
+            leftHandPoints = [];
+            rightHandPoints = [];
+            recentLeftPoints = [];
+            recentRightPoints = [];
           }
         }
-
-        drawCurve();
       }
+
+      // 保证每帧都更新
       requestAnimationFrame(render);
     }
 
