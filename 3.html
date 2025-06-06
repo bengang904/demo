@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <title>只用指纹解锁笔记示例</title>
+  <title>多种身份验证（指纹/面容/PIN）解锁笔记</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: sans-serif; padding: 20px; }
@@ -12,8 +12,8 @@
   </style>
 </head>
 <body>
-  <h2>安全笔记（指纹解锁）</h2>
-  <div id="status">请点击按钮进行指纹解锁</div>
+  <h2>安全笔记（指纹/面容/PIN 解锁）</h2>
+  <div id="status">请点击按钮进行身份验证（指纹/面容/PIN）</div>
   <button id="unlockBtn">🔓 解锁笔记</button>
 
   <div id="noteArea">
@@ -45,27 +45,26 @@
       return challenge;
     }
 
-    async function requireFingerprint() {
+    async function requireAuthentication() {
       if (!isMobile) {
         statusDiv.innerText = "请使用手机设备访问此页面。";
         return;
       }
       if (!window.PublicKeyCredential) {
-        statusDiv.innerText = "此设备或浏览器不支持指纹验证。";
+        statusDiv.innerText = "此设备或浏览器不支持身份验证功能。";
         return;
       }
 
       try {
-        statusDiv.innerText = "请进行指纹验证...";
+        statusDiv.innerText = "请进行身份验证...";
         unlockBtn.disabled = true;
 
-        // 调用WebAuthn进行验证，设备会优先弹指纹解锁界面
         const credential = await navigator.credentials.get({
           publicKey: {
             challenge: generateChallenge(),
             timeout: 60000,
-            userVerification: "required",  // 强制生物验证（指纹/面容/PIN）
-            allowCredentials: [] // 允许平台认证器（指纹识别设备）
+            userVerification: "required",  // 设备会弹出指纹/面容/PIN解锁界面
+            allowCredentials: []
           }
         });
 
@@ -73,12 +72,12 @@
         noteArea.style.display = "block";
         loadNote();
       } catch (err) {
-        statusDiv.innerText = "指纹验证失败或已取消。";
+        statusDiv.innerText = "身份验证失败或已取消。";
         unlockBtn.disabled = false;
       }
     }
 
-    unlockBtn.addEventListener("click", requireFingerprint);
+    unlockBtn.addEventListener("click", requireAuthentication);
     saveBtn.addEventListener("click", saveNote);
   </script>
 </body>
