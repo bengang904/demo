@@ -3,121 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>循环全屏模式</title>
+    <title>阻止离开页面</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             padding: 50px;
-            background: #f1f1f1;
+            background-color: #f5f5f5;
         }
 
-        .message {
-            background: #ffeb3b;
-            color: #d32f2f;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: none;
+        h1 {
+            font-size: 30px;
+            color: #333;
         }
 
-        button {
-            padding: 15px 30px;
+        p {
             font-size: 18px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all 0.3s ease-in-out;
-        }
-
-        button:hover {
-            background-color: #0056b3;
+            color: #666;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <!-- 提示信息 -->
-    <div class="message" id="warningMessage">
-        请在微信浏览器中打开此页面。
-    </div>
-
-    <div>
-        <button id="fullscreenBtn">开始执行</button>
-    </div>
+    <h1>阻止页面离开示例</h1>
+    <p>尝试刷新或关闭页面，您将看到提示框。</p>
 
     <script>
-        // 判断是否是微信浏览器
-        function isWeChatBrowser() {
-            const userAgent = navigator.userAgent.toLowerCase();
-            return userAgent.includes('micromessenger');
-        }
-
-        const fullscreenBtn = document.getElementById('fullscreenBtn');
-        const warningMessage = document.getElementById('warningMessage');
-        let fullscreenInterval;
-
-        // 如果不是微信浏览器，显示提示信息
-        if (!isWeChatBrowser()) {
-            warningMessage.style.display = 'block';
-            fullscreenBtn.style.display = 'none';  // 隐藏按钮
-        }
-
-        // 进入全屏的函数
-        function enterFullscreen() {
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen();  // 标准浏览器方法
-            } else if (document.documentElement.mozRequestFullScreen) {
-                document.documentElement.mozRequestFullScreen();  // Firefox
-            } else if (document.documentElement.webkitRequestFullscreen) {
-                document.documentElement.webkitRequestFullscreen();  // Chrome, Safari 和 Opera
-            } else if (document.documentElement.msRequestFullscreen) {
-                document.documentElement.msRequestFullscreen();  // IE/Edge
-            }
-        }
-
-        // 退出全屏的函数
-        function exitFullscreen() {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();  // 标准浏览器方法
-            } else if (document.mozCancelFullScreen) {
-                document.mozCancelFullScreen();  // Firefox
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();  // Chrome, Safari 和 Opera
-            } else if (document.msExitFullscreen) {
-                document.msExitFullscreen();  // IE/Edge
-            }
-        }
-
-        // 开始/停止循环的函数
-        function toggleFullscreenLoop() {
-            // 检查是否已经在循环中，如果是，清除定时器停止循环
-            if (fullscreenInterval) {
-                clearInterval(fullscreenInterval);
-                fullscreenInterval = null;
-                fullscreenBtn.textContent = '开始循环';  // 更改按钮文本
-            } else {
-                // 启动循环，每50毫秒退出并重新进入全屏
-                fullscreenInterval = setInterval(() => {
-                    if (document.fullscreenElement) {
-                        exitFullscreen();
-                    } else {
-                        enterFullscreen();
-                    }
-                }, 50);
-                fullscreenBtn.textContent = '停止循环';  // 更改按钮文本
-            }
-        }
-
-        // 监听按钮点击事件
-        fullscreenBtn.addEventListener('click', toggleFullscreenLoop);
-
-        // 在页面卸载（刷新/关闭）时弹出提示框
-        window.onbeforeunload = function () {
-            return "确定离开页面吗？";
-        };
-
+        // 监听beforeunload事件，阻止离开页面
+        window.addEventListener('beforeunload', function(event) {
+            // 显示默认的离开提示框
+            const message = "您有未保存的内容，确定要离开吗？";
+            event.returnValue = message;  // 标准方法
+            return message;  // 兼容一些旧浏览器
+        });
     </script>
 </body>
 </html>
