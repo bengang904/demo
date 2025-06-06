@@ -22,11 +22,26 @@
             color: #666;
             margin-top: 20px;
         }
+
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
     <h1>阻止页面离开示例</h1>
-    <p>尝试刷新或关闭页面，您将看到提示框。</p>
+    <p>点击按钮并尝试关闭或刷新页面，您将看到提示框。</p>
+    <button id="triggerButton">点击进行测试</button>
 
     <script>
         // 监听beforeunload事件，阻止离开页面
@@ -35,6 +50,12 @@
             const message = "您有未保存的内容，确定要离开吗？";
             event.returnValue = message;  // 标准方法
             return message;  // 兼容一些旧浏览器
+        });
+
+        // 测试按钮：触发某些操作
+        const triggerButton = document.getElementById('triggerButton');
+        triggerButton.addEventListener('click', function() {
+            alert('您点击了按钮！尝试刷新或离开页面...');
         });
     </script>
 </body>
