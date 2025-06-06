@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <title>安全笔记</title>
+  <title>安全笔记（指纹/面容/PIN/密码/扫码）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: sans-serif; padding: 20px; }
@@ -13,10 +13,11 @@
   </style>
 </head>
 <body>
-  <h2>🔐 安全笔记</h2>
+  <h2>安全笔记</h2>
   <div id="status">请选择解锁方式：</div>
 
   <button id="unlockBtn">🔓 使用设备验证</button>
+  <button id="qrLoginBtn" style="display:none;">📷 使用手机扫码登录</button>
 
   <div id="passwordLogin">
     <p>或输入密码解锁：</p>
@@ -32,6 +33,7 @@
   <script>
     const statusDiv = document.getElementById("status");
     const unlockBtn = document.getElementById("unlockBtn");
+    const qrLoginBtn = document.getElementById("qrLoginBtn");
     const passwordBtn = document.getElementById("passwordBtn");
     const passwordInput = document.getElementById("passwordInput");
     const noteArea = document.getElementById("noteArea");
@@ -39,15 +41,14 @@
     const saveBtn = document.getElementById("saveBtn");
 
     const CORRECT_PASSWORD = "1314";
-    const PASSWORD_KEY = "vaultPassword";
 
-    // 自动读取密码并解锁（可选）
-    window.addEventListener("DOMContentLoaded", () => {
-      const savedPwd = localStorage.getItem(PASSWORD_KEY);
-      if (savedPwd === CORRECT_PASSWORD) {
-        unlockSuccess("✅ 已从保险箱解锁，无需输入密码");
-      }
-    });
+    // 模拟：判断是否已经注册过通行密钥
+    const hasPasskey = localStorage.getItem("hasPasskey") === "true";
+
+    // 如果支持 WebAuthn 且已注册通行密钥，显示扫码登录按钮
+    if (window.PublicKeyCredential && hasPasskey) {
+      qrLoginBtn.style.display = "inline-block";
+    }
 
     function loadNote() {
       const content = localStorage.getItem("note");
@@ -67,7 +68,7 @@
 
     async function requireAuthentication() {
       if (!window.PublicKeyCredential) {
-        statusDiv.innerText = "⚠️ 此设备或浏览器不支持设备验证。";
+        statusDiv.innerText = "⚠️ 此设备或浏览器不支持设备验证。请使用支持 WebAuthn 的浏览器。";
         return;
       }
 
@@ -84,6 +85,9 @@
           }
         });
 
+        // 验证成功，标记已注册通行密钥（示例）
+        localStorage.setItem("hasPasskey", "true");
+
         unlockSuccess("✅ 设备验证成功，已解锁笔记。");
       } catch (err) {
         statusDiv.innerText = "❌ 验证失败或用户取消。";
@@ -91,12 +95,36 @@
       }
     }
 
+    async function qrLogin() {
+      if (!window.PublicKeyCredential) {
+        statusDiv.innerText = "⚠️ 此设备或浏览器不支持设备验证。";
+        return;
+      }
+
+      try {
+        statusDiv.innerText = "请用手机扫码并进行验证...";
+        qrLoginBtn.disabled = true;
+
+        const credential = await navigator.credentials.get({
+          publicKey: {
+            challenge: generateChallenge(),
+            timeout: 60000,
+            userVerification: "required",
+            allowCredentials: []
+          }
+        });
+
+        unlockSuccess("✅ 扫码验证成功，已解锁笔记。");
+      } catch (err) {
+        statusDiv.innerText = "❌ 验证失败或用户取消。";
+        qrLoginBtn.disabled = false;
+      }
+    }
+
     function passwordLogin() {
       const input = passwordInput.value.trim();
       if (input === CORRECT_PASSWORD) {
-        // 存入“保险箱”
-        localStorage.setItem(PASSWORD_KEY, input);
-        unlockSuccess("✅ 密码正确，已解锁并保存到保险箱。");
+        unlockSuccess("✅ 密码正确，已解锁笔记。");
       } else {
         statusDiv.innerText = "❌ 密码错误，请重试。";
       }
@@ -106,11 +134,13 @@
       statusDiv.innerText = message;
       noteArea.style.display = "block";
       unlockBtn.style.display = "none";
+      qrLoginBtn.style.display = "none";
       document.getElementById("passwordLogin").style.display = "none";
       loadNote();
     }
 
     unlockBtn.addEventListener("click", requireAuthentication);
+    qrLoginBtn.addEventListener("click", qrLogin);
     passwordBtn.addEventListener("click", passwordLogin);
     saveBtn.addEventListener("click", saveNote);
   </script>
