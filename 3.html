@@ -1,84 +1,48 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>多种身份验证（指纹/面容/PIN）解锁笔记</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    #noteArea { display: none; margin-top: 20px; }
-    textarea { width: 100%; height: 200px; }
-    button { padding: 10px 20px; margin-top: 10px; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>指纹解锁示例</title>
 </head>
 <body>
-  <h2>安全笔记（指纹/面容/PIN 解锁）</h2>
-  <div id="status">请点击按钮进行身份验证（指纹/面容/PIN）</div>
-  <button id="unlockBtn">🔓 解锁笔记</button>
+<h1>指纹解锁演示</h1>
+<button id="btn">使用指纹登录</button>
+<p id="status"></p>
 
-  <div id="noteArea">
-    <textarea id="note" placeholder="输入你的笔记..."></textarea><br />
-    <button id="saveBtn">💾 保存笔记</button>
-  </div>
+<script>
+const statusEl = document.getElementById('status');
+const btn = document.getElementById('btn');
 
-  <script>
-    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    const statusDiv = document.getElementById("status");
-    const unlockBtn = document.getElementById("unlockBtn");
-    const noteArea = document.getElementById("noteArea");
-    const note = document.getElementById("note");
-    const saveBtn = document.getElementById("saveBtn");
+btn.addEventListener('click', async () => {
+  statusEl.textContent = '正在请求指纹认证...';
 
-    function loadNote() {
-      const content = localStorage.getItem("note");
-      if (content) note.value = content;
+  if (!window.PublicKeyCredential) {
+    statusEl.textContent = '当前浏览器不支持WebAuthn';
+    return;
+  }
+
+  try {
+    // 生成一个认证请求（示例数据，生产环境需要后端生成Challenge）
+    const publicKey = {
+      challenge: new Uint8Array(32),
+      timeout: 60000,
+      userVerification: 'required',  // 强制生物识别验证
+    };
+
+    // 调用浏览器指纹（生物）认证
+    const credential = await navigator.credentials.get({ publicKey });
+
+    if (credential) {
+      statusEl.textContent = '认证成功！';
+      console.log('认证信息:', credential);
+    } else {
+      statusEl.textContent = '认证失败或取消';
     }
-
-    function saveNote() {
-      localStorage.setItem("note", note.value);
-      alert("笔记已保存！");
-    }
-
-    function generateChallenge(length = 32) {
-      const challenge = new Uint8Array(length);
-      window.crypto.getRandomValues(challenge);
-      return challenge;
-    }
-
-    async function requireAuthentication() {
-      if (!isMobile) {
-        statusDiv.innerText = "请使用手机设备访问此页面。";
-        return;
-      }
-      if (!window.PublicKeyCredential) {
-        statusDiv.innerText = "此设备或浏览器不支持身份验证功能。";
-        return;
-      }
-
-      try {
-        statusDiv.innerText = "请进行身份验证...";
-        unlockBtn.disabled = true;
-
-        const credential = await navigator.credentials.get({
-          publicKey: {
-            challenge: generateChallenge(),
-            timeout: 60000,
-            userVerification: "required",  // 设备会弹出指纹/面容/PIN解锁界面
-            allowCredentials: []
-          }
-        });
-
-        statusDiv.innerText = "验证成功，笔记已解锁。";
-        noteArea.style.display = "block";
-        loadNote();
-      } catch (err) {
-        statusDiv.innerText = "身份验证失败或已取消。";
-        unlockBtn.disabled = false;
-      }
-    }
-
-    unlockBtn.addEventListener("click", requireAuthentication);
-    saveBtn.addEventListener("click", saveNote);
-  </script>
+  } catch (err) {
+    statusEl.textContent = '认证异常: ' + err.message;
+  }
+});
+</script>
 </body>
 </html>
