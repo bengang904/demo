@@ -2,10 +2,10 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>简单 WebAuthn 示例</title>
+  <title>WebAuthn 注册并保存通行密钥示例</title>
 </head>
 <body>
-  <h2>WebAuthn 注册和登录示例1</h2>
+  <h2>WebAuthn 注册并保存通行密钥示例</h2>
 
   <button id="registerBtn">注册</button>
   <button id="loginBtn">登录</button>
@@ -15,13 +15,11 @@
   <script>
     const output = document.getElementById('output');
 
-    // 将 ArrayBuffer 转为 Base64Url 字符串
     function bufferToBase64Url(buffer) {
       return btoa(String.fromCharCode(...new Uint8Array(buffer)))
         .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
-    // 将 Base64Url 字符串转为 ArrayBuffer
     function base64UrlToBuffer(base64url) {
       base64url = base64url.replace(/-/g, '+').replace(/_/g, '/');
       const padLength = (4 - (base64url.length % 4)) % 4;
@@ -46,7 +44,7 @@
             displayName: "示例用户"
           },
           pubKeyCredParams: [
-            { type: "public-key", alg: -7 },  
+            { type: "public-key", alg: -7 },
             { type: "public-key", alg: -257 }
           ],
           timeout: 60000,
@@ -55,22 +53,15 @@
       };
     }
 
-    // 这里从 localStorage 读存储的 Credential ID，放入 allowCredentials
-    async function getLoginOptions() {
-      const storedCredentialId = localStorage.getItem('credentialId');
-      let allowCredentials = [];
-      if (storedCredentialId) {
-        allowCredentials = [{
-          type: 'public-key',
-          id: base64UrlToBuffer(storedCredentialId),
-          // transports 可选，比如 ['usb', 'nfc', 'ble', 'internal']
-        }];
-      }
-
+    async function getLoginOptions(credentialId) {
       return {
         publicKey: {
           challenge: Uint8Array.from(window.crypto.getRandomValues(new Uint8Array(32))),
-          allowCredentials,
+          allowCredentials: credentialId ? [{
+            type: "public-key",
+            id: base64UrlToBuffer(credentialId),
+            transports: ["usb", "nfc", "ble", "internal"]
+          }] : [],
           timeout: 60000,
           userVerification: "preferred"
         }
@@ -81,16 +72,15 @@
       output.textContent = '注册中...';
       try {
         const options = await getRegisterOptions();
-
         const credential = await navigator.credentials.create(options);
 
         const rawId = credential.rawId;
-        const credentialIdBase64 = bufferToBase64Url(rawId);
+        const credentialId = bufferToBase64Url(rawId);
 
-        // 存储 Credential ID 到 localStorage
-        localStorage.setItem('credentialId', credentialIdBase64);
+        // 保存 credentialId 到 localStorage
+        localStorage.setItem('credentialId', credentialId);
 
-        output.textContent = `注册成功!\nCredential ID 已存储。\nID: ${credentialIdBase64}`;
+        output.textContent = `注册成功!\n已保存Credential ID:\n${credentialId}\n设备会自动保存密钥。`;
       } catch (e) {
         output.textContent = '注册失败: ' + e;
       }
@@ -98,15 +88,18 @@
 
     document.getElementById('loginBtn').addEventListener('click', async () => {
       output.textContent = '登录中...';
-      try {
-        const options = await getLoginOptions();
 
+      try {
+        const credentialId = localStorage.getItem('credentialId');
+        if (!credentialId) {
+          output.textContent = '未找到已注册的凭证，请先注册';
+          return;
+        }
+
+        const options = await getLoginOptions(credentialId);
         const assertion = await navigator.credentials.get(options);
 
-        const rawId = assertion.rawId;
-        const credentialIdBase64 = bufferToBase64Url(rawId);
-
-        output.textContent = `登录成功!\nCredential ID: ${credentialIdBase64}`;
+        output.textContent = `登录成功!\nCredential ID: ${credentialId}\n`;
       } catch (e) {
         output.textContent = '登录失败: ' + e;
       }
