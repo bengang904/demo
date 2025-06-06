@@ -2,151 +2,152 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>WebAuthn 跨设备扫码登录示例（模拟）</title>
+  <title>WebAuthn 登录 + 扫码跨设备登录示例</title>
+  <style>
+    #qr-scanner {
+      display: none;
+      margin-top: 20px;
+    }
+    #video {
+      width: 300px;
+      height: 300px;
+      border: 1px solid #ccc;
+    }
+  </style>
 </head>
 <body>
-  <h2>设备 A：生成登录二维码（模拟）</h2>
-  <button id="registerBtn">注册并生成登录二维码</button>
-  <div id="qrCode" style="margin: 10px 0; font-weight: bold;"></div>
-  <div id="status" style="margin-bottom: 20px; white-space: pre-wrap;"></div>
+  <h2>WebAuthn 注册和登录示例</h2>
 
-  <hr />
+  <button id="registerBtn">注册</button>
+  <button id="loginBtn">登录</button>
 
-  <h2>设备 B：扫码登录（输入二维码内容）</h2>
-  <input type="text" id="qrInput" placeholder="请输入登录二维码内容" style="width: 300px;" />
-  <button id="loginBtn">扫码登录</button>
-  <div id="loginStatus" style="white-space: pre-wrap; margin-top: 10px;"></div>
+  <div id="output" style="white-space: pre-wrap; margin-top: 20px;"></div>
+
+  <div id="qr-scanner">
+    <h3>请扫码以完成跨设备登录</h3>
+    <video id="video" autoplay></video>
+    <div id="qr-result" style="margin-top:10px; color: green; font-weight: bold;"></div>
+  </div>
+
+  <!-- 引入 jsQR 库，二维码识别 -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
   <script>
-    const qrCodeDiv = document.getElementById('qrCode');
-    const statusDiv = document.getElementById('status');
-    const loginStatusDiv = document.getElementById('loginStatus');
+    const output = document.getElementById('output');
+    const qrScanner = document.getElementById('qr-scanner');
+    const video = document.getElementById('video');
+    const qrResult = document.getElementById('qr-result');
 
-    // 工具函数：ArrayBuffer <-> Base64Url
+    let videoStream;
+
     function bufferToBase64Url(buffer) {
       return btoa(String.fromCharCode(...new Uint8Array(buffer)))
         .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
-    function base64UrlToBuffer(base64url) {
-      base64url = base64url.replace(/-/g, '+').replace(/_/g, '/');
-      const padLength = (4 - (base64url.length % 4)) % 4;
-      base64url += '='.repeat(padLength);
-      const str = atob(base64url);
-      const buffer = new ArrayBuffer(str.length);
-      const bytes = new Uint8Array(buffer);
-      for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i);
-      return buffer;
-    }
 
-    // 简单模拟服务器存储
-    const SERVER_STORAGE_KEY = 'webauthn_server_sim';
-
-    // 生成随机ID（用于登录会话和用户ID）
-    function randomId(len=16) {
-      const arr = new Uint8Array(len);
-      crypto.getRandomValues(arr);
-      return Array.from(arr).map(b => ('00'+b.toString(16)).slice(-2)).join('');
-    }
-
-    // 设备A注册并生成登录二维码（登录会话ID）
-    document.getElementById('registerBtn').onclick = async () => {
-      statusDiv.textContent = '注册中...';
-
-      // 生成随机用户ID
-      const userId = Uint8Array.from(crypto.getRandomValues(new Uint8Array(16)));
-
-      const publicKeyOptions = {
-        challenge: crypto.getRandomValues(new Uint8Array(32)),
-        rp: { name: "示例网站" },
-        user: {
-          id: userId,
-          name: "user@example.com",
-          displayName: "示例用户"
-        },
-        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
-        timeout: 60000,
-        attestation: "direct"
+    async function getRegisterOptions() {
+      return {
+        publicKey: {
+          challenge: Uint8Array.from(window.crypto.getRandomValues(new Uint8Array(32))),
+          rp: { name: "示例网站" },
+          user: {
+            id: Uint8Array.from(window.crypto.getRandomValues(new Uint8Array(16))),
+            name: "user@example.com",
+            displayName: "示例用户"
+          },
+          pubKeyCredParams: [
+            { type: "public-key", alg: -7 },
+            { type: "public-key", alg: -257 }
+          ],
+          timeout: 60000,
+          attestation: "direct"
+        }
       };
+    }
 
-      try {
-        const credential = await navigator.credentials.create({ publicKey: publicKeyOptions });
-
-        const credentialIdB64 = bufferToBase64Url(credential.rawId);
-
-        // 保存注册的凭证ID，模拟服务器存储（key是登录会话ID）
-        const loginSessionId = randomId(12); // 模拟二维码内容，代表登录会话
-        const serverData = {
-          loginSessionId,
-          credentialId: credentialIdB64,
-          authenticated: false
-        };
-        localStorage.setItem(SERVER_STORAGE_KEY, JSON.stringify(serverData));
-
-        // 显示二维码内容（真实场景要生成二维码图像）
-        qrCodeDiv.textContent = `登录二维码内容（请复制到设备B扫码）:\n${loginSessionId}`;
-        statusDiv.textContent = `注册成功！凭证ID已保存。\n等待设备B扫码登录...`;
-
-        // 设备A轮询“服务器”检查登录状态
-        const pollInterval = setInterval(() => {
-          const stored = JSON.parse(localStorage.getItem(SERVER_STORAGE_KEY) || '{}');
-          if (stored.loginSessionId === loginSessionId && stored.authenticated) {
-            clearInterval(pollInterval);
-            statusDiv.textContent = '设备B扫码并登录成功！你已登录。';
-          }
-        }, 2000);
-
-      } catch(e) {
-        statusDiv.textContent = '注册失败: ' + e;
-      }
-    };
-
-    // 设备B扫码并登录
-    document.getElementById('loginBtn').onclick = async () => {
-      loginStatusDiv.textContent = '登录中...';
-      const loginSessionId = document.getElementById('qrInput').value.trim();
-      if (!loginSessionId) {
-        loginStatusDiv.textContent = '请输入有效的登录二维码内容';
-        return;
-      }
-
-      // 从“服务器”读取凭证ID
-      const serverDataRaw = localStorage.getItem(SERVER_STORAGE_KEY);
-      if (!serverDataRaw) {
-        loginStatusDiv.textContent = '服务器无此登录会话信息';
-        return;
-      }
-
-      const serverData = JSON.parse(serverDataRaw);
-      if (serverData.loginSessionId !== loginSessionId) {
-        loginStatusDiv.textContent = '登录二维码无效';
-        return;
-      }
-
-      try {
-        const allowCredentials = [{
-          type: "public-key",
-          id: base64UrlToBuffer(serverData.credentialId),
-          transports: ["internal", "usb", "nfc", "ble"]
-        }];
-
-        const publicKeyRequestOptions = {
-          challenge: crypto.getRandomValues(new Uint8Array(32)),
-          allowCredentials,
+    async function getLoginOptions() {
+      return {
+        publicKey: {
+          challenge: Uint8Array.from(window.crypto.getRandomValues(new Uint8Array(32))),
+          allowCredentials: [],
           timeout: 60000,
           userVerification: "preferred"
-        };
+        }
+      };
+    }
 
-        const assertion = await navigator.credentials.get({ publicKey: publicKeyRequestOptions });
+    async function startQrScanner(onScan) {
+      qrScanner.style.display = 'block';
+      qrResult.textContent = '正在启动摄像头...';
 
-        // 模拟服务器验证通过，设置登录状态
-        serverData.authenticated = true;
-        localStorage.setItem(SERVER_STORAGE_KEY, JSON.stringify(serverData));
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        video.srcObject = videoStream;
 
-        loginStatusDiv.textContent = '登录成功！凭证ID:\n' + serverData.credentialId;
-      } catch(e) {
-        loginStatusDiv.textContent = '登录失败: ' + e;
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        function scanFrame() {
+          if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+            if (code) {
+              qrResult.textContent = '二维码内容: ' + code.data;
+              onScan(code.data);
+              stopQrScanner();
+              return;
+            } else {
+              qrResult.textContent = '未检测到二维码，请对准二维码';
+            }
+          }
+          requestAnimationFrame(scanFrame);
+        }
+        scanFrame();
+      } catch (err) {
+        qrResult.textContent = '无法启动摄像头: ' + err;
       }
-    };
+    }
+
+    function stopQrScanner() {
+      qrScanner.style.display = 'none';
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+      }
+    }
+
+    document.getElementById('registerBtn').addEventListener('click', async () => {
+      output.textContent = '注册中...';
+      try {
+        const options = await getRegisterOptions();
+        const credential = await navigator.credentials.create(options);
+        const rawId = credential.rawId;
+        output.textContent = `注册成功!\nCredential ID: ${bufferToBase64Url(rawId)}\n`;
+      } catch (e) {
+        output.textContent = '注册失败: ' + e;
+      }
+    });
+
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      output.textContent = '登录中...';
+      try {
+        const options = await getLoginOptions();
+        const assertion = await navigator.credentials.get(options);
+        const rawId = assertion.rawId;
+        output.textContent = `登录成功!\nCredential ID: ${bufferToBase64Url(rawId)}\n`;
+
+        // 登录成功后启动扫码界面
+        startQrScanner(qrData => {
+          // 这里拿到扫码字符串，可发送给服务器验证或执行其他逻辑
+          output.textContent += `\n扫码内容已获取:\n${qrData}\n\n你可以根据扫码内容完成跨设备登录验证。`;
+        });
+      } catch (e) {
+        output.textContent = '登录失败: ' + e;
+      }
+    });
   </script>
 </body>
 </html>
