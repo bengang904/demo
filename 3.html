@@ -1,47 +1,107 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>通行密钥解锁页面</title>
+  <meta charset="UTF-8" />
+  <title>安全笔记（指纹 / 面容 / PIN / 密码）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #noteArea { display: none; margin-top: 20px; }
+    textarea { width: 100%; height: 200px; }
+    button { padding: 10px 20px; margin-top: 10px; }
+    #passwordLogin { margin-top: 20px; }
+  </style>
 </head>
 <body>
-<button id="btn">通行密钥解锁</button>
-<p id="status"></p>
+  <h2>🔐 安全笔记</h2>
+  <div id="status">请选择解锁方式：</div>
 
-<script>
-const statusEl = document.getElementById('status');
-const btn = document.getElementById('btn');
+  <button id="unlockBtn">🔓 使用设备验证</button>
 
-btn.addEventListener('click', async () => {
-  statusEl.textContent = '正在请求认证...';
+  <div id="passwordLogin">
+    <p>或输入密码解锁：</p>
+    <input type="password" id="passwordInput" placeholder="请输入密码" />
+    <button id="passwordBtn">✅ 密码解锁</button>
+  </div>
 
-  if (!window.PublicKeyCredential) {
-    statusEl.textContent = '当前浏览器不支持WebAuthn';
-    return;
-  }
+  <div id="noteArea">
+    <textarea id="note" placeholder="输入你的笔记..."></textarea><br />
+    <button id="saveBtn">💾 保存笔记</button>
+  </div>
 
-  try {
-    // 生成一个认证请求（示例数据，生产环境需要后端生成Challenge）
-    const publicKey = {
-      challenge: new Uint8Array(32),
-      timeout: 60000,
-      userVerification: 'required',  // 强制生物识别验证
-    };
+  <script>
+    const statusDiv = document.getElementById("status");
+    const unlockBtn = document.getElementById("unlockBtn");
+    const passwordBtn = document.getElementById("passwordBtn");
+    const passwordInput = document.getElementById("passwordInput");
+    const noteArea = document.getElementById("noteArea");
+    const note = document.getElementById("note");
+    const saveBtn = document.getElementById("saveBtn");
 
-    // 调用浏览器指纹（生物）认证
-    const credential = await navigator.credentials.get({ publicKey });
+    const CORRECT_PASSWORD = "1314";
 
-    if (credential) {
-      statusEl.textContent = '认证成功！';
-      console.log('认证信息:', credential);
-    } else {
-      statusEl.textContent = '认证失败或取消';
+    function loadNote() {
+      const content = localStorage.getItem("note");
+      if (content) note.value = content;
     }
-  } catch (err) {
-    statusEl.textContent = '认证异常: ' + err.message;
-  }
-});
-</script>
+
+    function saveNote() {
+      localStorage.setItem("note", note.value);
+      alert("✅ 笔记已保存！");
+    }
+
+    function generateChallenge(length = 32) {
+      const challenge = new Uint8Array(length);
+      window.crypto.getRandomValues(challenge);
+      return challenge;
+    }
+
+    async function requireAuthentication() {
+      if (!window.PublicKeyCredential) {
+        statusDiv.innerText = "⚠️ 此设备或浏览器不支持设备验证。请使用支持 WebAuthn 的浏览器。";
+        return;
+      }
+
+      try {
+        statusDiv.innerText = "请进行设备验证...";
+        unlockBtn.disabled = true;
+
+        const credential = await navigator.credentials.get({
+          publicKey: {
+            challenge: generateChallenge(),
+            timeout: 60000,
+            userVerification: "required",
+            allowCredentials: []
+          }
+        });
+
+        unlockSuccess("✅ 设备验证成功，已解锁笔记。");
+      } catch (err) {
+        statusDiv.innerText = "❌ 验证失败或用户取消。";
+        unlockBtn.disabled = false;
+      }
+    }
+
+    function passwordLogin() {
+      const input = passwordInput.value.trim();
+      if (input === CORRECT_PASSWORD) {
+        unlockSuccess("✅ 密码正确，已解锁笔记。");
+      } else {
+        statusDiv.innerText = "❌ 密码错误，请重试。";
+      }
+    }
+
+    function unlockSuccess(message) {
+      statusDiv.innerText = message;
+      noteArea.style.display = "block";
+      unlockBtn.style.display = "none";
+      document.getElementById("passwordLogin").style.display = "none";
+      loadNote();
+    }
+
+    unlockBtn.addEventListener("click", requireAuthentication);
+    passwordBtn.addEventListener("click", passwordLogin);
+    saveBtn.addEventListener("click", saveNote);
+  </script>
 </body>
 </html>
