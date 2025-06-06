@@ -2,45 +2,39 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>WebAuthn 登录+扫码摄像头示例</title>
-  <style>
-    video {
-      width: 320px;
-      height: 240px;
-      border: 1px solid black;
-    }
-    #output {
-      white-space: pre-wrap;
-      margin-top: 20px;
-    }
-  </style>
+  <title>简单 WebAuthn 示例</title>
 </head>
 <body>
-  <h2>WebAuthn 登录示例 + 扫码摄像头</h2>
+  <h2>WebAuthn 注册和登录示例</h2>
 
   <button id="registerBtn">注册</button>
-  <button id="loginBtn">登录</button>
+  <button id="loginBtn" style="display: none;">登录</button>
 
-  <div id="output"></div>
-
-  <!-- 摄像头预览 -->
-  <video id="video" autoplay></video>
-
-  <!-- 引入 jsQR 库 -->
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <div id="output" style="white-space: pre-wrap; margin-top: 20px;"></div>
 
   <script>
     const output = document.getElementById('output');
-    const video = document.getElementById('video');
-    let scanning = false;
+    const registerBtn = document.getElementById('registerBtn');
+    const loginBtn = document.getElementById('loginBtn');
 
-    // 将 ArrayBuffer 转为 Base64Url 字符串
     function bufferToBase64Url(buffer) {
       return btoa(String.fromCharCode(...new Uint8Array(buffer)))
         .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
-    // 伪造服务器生成的注册选项
+    function base64UrlToBuffer(base64url) {
+      base64url = base64url.replace(/-/g, '+').replace(/_/g, '/');
+      const padLength = (4 - (base64url.length % 4)) % 4;
+      base64url += '='.repeat(padLength);
+      const str = atob(base64url);
+      const buffer = new ArrayBuffer(str.length);
+      const byteArray = new Uint8Array(buffer);
+      for (let i = 0; i < str.length; i++) {
+        byteArray[i] = str.charCodeAt(i);
+      }
+      return buffer;
+    }
+
     async function getRegisterOptions() {
       return {
         publicKey: {
@@ -52,8 +46,8 @@
             displayName: "示例用户"
           },
           pubKeyCredParams: [
-            { type: "public-key", alg: -7 },  // ES256
-            { type: "public-key", alg: -257 } // RS256
+            { type: "public-key", alg: -7 },
+            { type: "public-key", alg: -257 }
           ],
           timeout: 60000,
           attestation: "direct"
@@ -61,7 +55,6 @@
       };
     }
 
-    // 伪造服务器生成的登录选项
     async function getLoginOptions() {
       return {
         publicKey: {
@@ -73,72 +66,31 @@
       };
     }
 
-    // 登录成功后启动摄像头扫码
-    async function startScanning() {
-      output.textContent = '登录成功，正在请求摄像头权限并启动扫码...';
-
-      if (scanning) return; // 防止多次启动
-      scanning = true;
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        video.srcObject = stream;
-
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-
-        function scan() {
-          if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
-            if (code) {
-              output.textContent = `扫码成功！内容:\n${code.data}`;
-              // 扫码成功后停止摄像头
-              stream.getTracks().forEach(track => track.stop());
-              scanning = false;
-
-              // 这里你可以解析 code.data，处理跨设备登录逻辑
-              // 比如判断是否以 "FIDO:" 开头，发送给服务器等
-              return;
-            } else {
-              output.textContent = '正在扫码，请对准二维码...';
-            }
-          }
-          if (scanning) {
-            requestAnimationFrame(scan);
-          }
-        }
-        requestAnimationFrame(scan);
-      } catch (e) {
-        output.textContent = '获取摄像头失败: ' + e.message;
-        scanning = false;
-      }
-    }
-
-    document.getElementById('registerBtn').addEventListener('click', async () => {
+    registerBtn.addEventListener('click', async () => {
       output.textContent = '注册中...';
       try {
         const options = await getRegisterOptions();
         const credential = await navigator.credentials.create(options);
-        output.textContent = `注册成功!\nCredential ID: ${bufferToBase64Url(credential.rawId)}\n`;
+
+        const rawId = credential.rawId;
+        output.textContent = `注册成功!\nCredential ID: ${bufferToBase64Url(rawId)}\n`;
+
+        // 注册成功后隐藏注册按钮，显示登录按钮
+        registerBtn.style.display = 'none';
+        loginBtn.style.display = 'inline-block';
       } catch (e) {
         output.textContent = '注册失败: ' + e;
       }
     });
 
-    document.getElementById('loginBtn').addEventListener('click', async () => {
+    loginBtn.addEventListener('click', async () => {
       output.textContent = '登录中...';
       try {
         const options = await getLoginOptions();
         const assertion = await navigator.credentials.get(options);
-        output.textContent = `登录成功!\nCredential ID: ${bufferToBase64Url(assertion.rawId)}\n`;
+        const rawId = assertion.rawId;
 
-        // 登录成功后启动扫码摄像头
-        startScanning();
+        output.textContent = `登录成功!\nCredential ID: ${bufferToBase64Url(rawId)}\n`;
       } catch (e) {
         output.textContent = '登录失败: ' + e;
       }
