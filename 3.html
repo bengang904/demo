@@ -8,20 +8,20 @@
   <h2>WebAuthn 注册和登录示例</h2>
 
   <button id="registerBtn">注册</button>
-  <button id="loginBtn" style="display: none;">登录</button>
+  <button id="loginBtn">登录</button>
 
   <div id="output" style="white-space: pre-wrap; margin-top: 20px;"></div>
 
   <script>
     const output = document.getElementById('output');
-    const registerBtn = document.getElementById('registerBtn');
-    const loginBtn = document.getElementById('loginBtn');
 
+    // 将 ArrayBuffer 转为 Base64Url 字符串
     function bufferToBase64Url(buffer) {
       return btoa(String.fromCharCode(...new Uint8Array(buffer)))
         .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
+    // 将 Base64Url 字符串转为 ArrayBuffer
     function base64UrlToBuffer(base64url) {
       base64url = base64url.replace(/-/g, '+').replace(/_/g, '/');
       const padLength = (4 - (base64url.length % 4)) % 4;
@@ -35,6 +35,7 @@
       return buffer;
     }
 
+    // 伪造服务器生成的注册选项
     async function getRegisterOptions() {
       return {
         publicKey: {
@@ -46,8 +47,8 @@
             displayName: "示例用户"
           },
           pubKeyCredParams: [
-            { type: "public-key", alg: -7 },
-            { type: "public-key", alg: -257 }
+            { type: "public-key", alg: -7 },  // ES256
+            { type: "public-key", alg: -257 } // RS256
           ],
           timeout: 60000,
           attestation: "direct"
@@ -55,39 +56,50 @@
       };
     }
 
+    // 伪造服务器生成的登录选项
     async function getLoginOptions() {
       return {
         publicKey: {
           challenge: Uint8Array.from(window.crypto.getRandomValues(new Uint8Array(32))),
-          allowCredentials: [],
+          allowCredentials: [], // 这里可填之前注册的凭证ID
           timeout: 60000,
           userVerification: "preferred"
         }
       };
     }
 
-    registerBtn.addEventListener('click', async () => {
+    document.getElementById('registerBtn').addEventListener('click', async () => {
       output.textContent = '注册中...';
       try {
         const options = await getRegisterOptions();
+
+        // 调用WebAuthn API创建凭证
         const credential = await navigator.credentials.create(options);
 
+        // 简单显示凭证信息
+        const attestationObject = credential.response.attestationObject;
+        const clientDataJSON = credential.response.clientDataJSON;
         const rawId = credential.rawId;
-        output.textContent = `注册成功!\nCredential ID: ${bufferToBase64Url(rawId)}\n`;
 
-        // 注册成功后隐藏注册按钮，显示登录按钮
-        registerBtn.style.display = 'none';
-        loginBtn.style.display = 'inline-block';
+        output.textContent = `注册成功!\nCredential ID: ${bufferToBase64Url(rawId)}\n`;
       } catch (e) {
         output.textContent = '注册失败: ' + e;
       }
     });
 
-    loginBtn.addEventListener('click', async () => {
+    document.getElementById('loginBtn').addEventListener('click', async () => {
       output.textContent = '登录中...';
       try {
         const options = await getLoginOptions();
+
+        // 调用WebAuthn API获取凭证
         const assertion = await navigator.credentials.get(options);
+
+        // 显示凭证信息
+        const authData = assertion.response.authenticatorData;
+        const clientDataJSON = assertion.response.clientDataJSON;
+        const signature = assertion.response.signature;
+        const userHandle = assertion.response.userHandle;
         const rawId = assertion.rawId;
 
         output.textContent = `登录成功!\nCredential ID: ${bufferToBase64Url(rawId)}\n`;
