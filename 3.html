@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>指纹解锁示例</title>
+<title>通行密钥解锁页面</title>
 </head>
 <body>
-<h1>指纹解锁演示</h1>
-<button id="btn">使用指纹登录</button>
+<button id="btn">通行密钥解锁</button>
 <p id="status"></p>
 
 <script>
@@ -15,7 +14,7 @@ const statusEl = document.getElementById('status');
 const btn = document.getElementById('btn');
 
 btn.addEventListener('click', async () => {
-  statusEl.textContent = '正在请求指纹认证...';
+  statusEl.textContent = '正在请求认证...';
 
   if (!window.PublicKeyCredential) {
     statusEl.textContent = '当前浏览器不支持WebAuthn';
