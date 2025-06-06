@@ -44,7 +44,7 @@
     </div>
 
     <div>
-        <button id="fullscreenBtn">开始执行</button>
+        <button id="fullscreenBtn">点击</button>
     </div>
 
     <script>
@@ -56,7 +56,6 @@
 
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         const warningMessage = document.getElementById('warningMessage');
-        let fullscreenInterval;
 
         // 如果不是微信浏览器，显示提示信息
         if (!isWeChatBrowser()) {
@@ -90,28 +89,14 @@
             }
         }
 
-        // 开始/停止循环的函数
-        function toggleFullscreenLoop() {
-            // 检查是否已经在循环中，如果是，清除定时器停止循环
-            if (fullscreenInterval) {
-                clearInterval(fullscreenInterval);
-                fullscreenInterval = null;
-                fullscreenBtn.textContent = '开始循环';  // 更改按钮文本
-            } else {
-                // 启动循环，每50毫秒退出并重新进入全屏
-                fullscreenInterval = setInterval(() => {
-                    if (document.fullscreenElement) {
-                        exitFullscreen();
-                    } else {
-                        enterFullscreen();
-                    }
-                }, 50);
-                fullscreenBtn.textContent = '停止循环';  // 更改按钮文本
-            }
+        // 执行全屏操作：先进入全屏，再退出全屏，没有延时
+        function executeFullscreenAction() {
+            enterFullscreen();  // 进入全屏
+            exitFullscreen();   // 立刻退出全屏
         }
 
         // 监听按钮点击事件
-        fullscreenBtn.addEventListener('click', toggleFullscreenLoop);
+        fullscreenBtn.addEventListener('click', executeFullscreenAction);
 
     </script>
 </body>
