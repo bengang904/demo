@@ -1,79 +1,88 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <title>安全笔记（指纹验证）</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>网页指纹解锁笔记示例</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: sans-serif; padding: 20px; }
-    #noteArea, #unlockButton { display: none; margin-top: 20px; }
+    #noteArea { display: none; margin-top: 20px; }
     textarea { width: 100%; height: 200px; }
-    button { padding: 10px 20px; font-size: 16px; }
+    button { padding: 10px 20px; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h2>安全笔记</h2>
-  <div id="status">正在检测设备...</div>
-
-  <button id="unlockButton" onclick="requireFingerprint()">🔓 解锁笔记</button>
+  <h2>安全笔记（WebAuthn指纹解锁）</h2>
+  <div id="status">请点击按钮进行指纹解锁</div>
+  <button id="unlockBtn">🔓 解锁笔记</button>
 
   <div id="noteArea">
-    <textarea id="note" placeholder="输入你的笔记..."></textarea><br>
-    <button onclick="saveNote()">保存笔记</button>
+    <textarea id="note" placeholder="输入你的笔记..."></textarea><br />
+    <button id="saveBtn">💾 保存笔记</button>
   </div>
 
   <script>
     const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
     const statusDiv = document.getElementById("status");
+    const unlockBtn = document.getElementById("unlockBtn");
     const noteArea = document.getElementById("noteArea");
     const note = document.getElementById("note");
-    const unlockButton = document.getElementById("unlockButton");
+    const saveBtn = document.getElementById("saveBtn");
 
+    // 加载笔记
     function loadNote() {
       const content = localStorage.getItem("note");
       if (content) note.value = content;
     }
 
+    // 保存笔记
     function saveNote() {
       localStorage.setItem("note", note.value);
       alert("笔记已保存！");
     }
 
+    // 生成随机挑战
+    function generateChallenge(length = 32) {
+      const challenge = new Uint8Array(length);
+      window.crypto.getRandomValues(challenge);
+      return challenge;
+    }
+
+    // 指纹解锁函数
     async function requireFingerprint() {
+      if (!isMobile) {
+        statusDiv.innerText = "请使用手机设备访问此页面。";
+        return;
+      }
+      if (!window.PublicKeyCredential) {
+        statusDiv.innerText = "此设备或浏览器不支持指纹验证。";
+        return;
+      }
+
       try {
         statusDiv.innerText = "请进行指纹验证...";
-        const cred = await navigator.credentials.get({
+        unlockBtn.disabled = true;
+
+        const credential = await navigator.credentials.get({
           publicKey: {
-            challenge: new Uint8Array(32),
+            challenge: generateChallenge(),
             timeout: 60000,
             userVerification: "required",
-            allowCredentials: []
+            allowCredentials: [] // 允许使用平台认证器
           }
         });
-        statusDiv.innerText = "✅ 验证成功，笔记已解锁";
-        unlockButton.style.display = "none";
-        loadNote();
+
+        statusDiv.innerText = "验证成功，笔记已解锁。";
         noteArea.style.display = "block";
-      } catch (e) {
-        statusDiv.innerText = "❌ 验证失败或取消，无法访问笔记";
+        loadNote();
+      } catch (err) {
+        statusDiv.innerText = "指纹验证失败或已取消。";
+        unlockBtn.disabled = false;
       }
     }
 
-    // 页面初始化
-    window.onload = () => {
-      if (!isMobile) {
-        statusDiv.innerText = "⚠️ 请使用手机设备访问此页面。";
-        return;
-      }
-
-      if (!window.PublicKeyCredential) {
-        statusDiv.innerText = "⚠️ 此设备或浏览器不支持指纹验证。";
-        return;
-      }
-
-      statusDiv.innerText = "请点击下方按钮解锁笔记：";
-      unlockButton.style.display = "inline-block";
-    };
+    unlockBtn.addEventListener("click", requireFingerprint);
+    saveBtn.addEventListener("click", saveNote);
   </script>
 </body>
 </html>
