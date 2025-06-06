@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <title>网页指纹解锁笔记示例</title>
+  <title>只用指纹解锁笔记示例</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: sans-serif; padding: 20px; }
@@ -12,7 +12,7 @@
   </style>
 </head>
 <body>
-  <h2>安全笔记（WebAuthn指纹解锁）</h2>
+  <h2>安全笔记（指纹解锁）</h2>
   <div id="status">请点击按钮进行指纹解锁</div>
   <button id="unlockBtn">🔓 解锁笔记</button>
 
@@ -29,26 +29,22 @@
     const note = document.getElementById("note");
     const saveBtn = document.getElementById("saveBtn");
 
-    // 加载笔记
     function loadNote() {
       const content = localStorage.getItem("note");
       if (content) note.value = content;
     }
 
-    // 保存笔记
     function saveNote() {
       localStorage.setItem("note", note.value);
       alert("笔记已保存！");
     }
 
-    // 生成随机挑战
     function generateChallenge(length = 32) {
       const challenge = new Uint8Array(length);
       window.crypto.getRandomValues(challenge);
       return challenge;
     }
 
-    // 指纹解锁函数
     async function requireFingerprint() {
       if (!isMobile) {
         statusDiv.innerText = "请使用手机设备访问此页面。";
@@ -63,12 +59,13 @@
         statusDiv.innerText = "请进行指纹验证...";
         unlockBtn.disabled = true;
 
+        // 调用WebAuthn进行验证，设备会优先弹指纹解锁界面
         const credential = await navigator.credentials.get({
           publicKey: {
             challenge: generateChallenge(),
             timeout: 60000,
-            userVerification: "required",
-            allowCredentials: [] // 允许使用平台认证器
+            userVerification: "required",  // 强制生物验证（指纹/面容/PIN）
+            allowCredentials: [] // 允许平台认证器（指纹识别设备）
           }
         });
 
