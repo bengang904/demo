@@ -1,148 +1,112 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>安全笔记（指纹/面容/PIN/密码/扫码）</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    #noteArea { display: none; margin-top: 20px; }
-    textarea { width: 100%; height: 200px; }
-    button { padding: 10px 20px; margin-top: 10px; }
-    #passwordLogin { margin-top: 20px; }
-  </style>
+  <title>简单 WebAuthn 示例</title>
 </head>
 <body>
-  <h2>安全笔记</h2>
-  <div id="status">请选择解锁方式：</div>
+  <h2>WebAuthn 注册和登录示例</h2>
 
-  <button id="unlockBtn">🔓 使用设备验证</button>
-  <button id="qrLoginBtn" style="display:none;">📷 使用手机扫码登录</button>
+  <button id="registerBtn">注册</button>
+  <button id="loginBtn">登录</button>
 
-  <div id="passwordLogin">
-    <p>或输入密码解锁：</p>
-    <input type="password" id="passwordInput" placeholder="请输入密码" />
-    <button id="passwordBtn">✅ 密码解锁</button>
-  </div>
-
-  <div id="noteArea">
-    <textarea id="note" placeholder="输入你的笔记..."></textarea><br />
-    <button id="saveBtn">💾 保存笔记</button>
-  </div>
+  <div id="output" style="white-space: pre-wrap; margin-top: 20px;"></div>
 
   <script>
-    const statusDiv = document.getElementById("status");
-    const unlockBtn = document.getElementById("unlockBtn");
-    const qrLoginBtn = document.getElementById("qrLoginBtn");
-    const passwordBtn = document.getElementById("passwordBtn");
-    const passwordInput = document.getElementById("passwordInput");
-    const noteArea = document.getElementById("noteArea");
-    const note = document.getElementById("note");
-    const saveBtn = document.getElementById("saveBtn");
+    const output = document.getElementById('output');
 
-    const CORRECT_PASSWORD = "1314";
-
-    // 模拟：判断是否已经注册过通行密钥
-    const hasPasskey = localStorage.getItem("hasPasskey") === "true";
-
-    // 如果支持 WebAuthn 且已注册通行密钥，显示扫码登录按钮
-    if (window.PublicKeyCredential && hasPasskey) {
-      qrLoginBtn.style.display = "inline-block";
+    // 将 ArrayBuffer 转为 Base64Url 字符串
+    function bufferToBase64Url(buffer) {
+      return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
-    function loadNote() {
-      const content = localStorage.getItem("note");
-      if (content) note.value = content;
-    }
-
-    function saveNote() {
-      localStorage.setItem("note", note.value);
-      alert("✅ 笔记已保存！");
-    }
-
-    function generateChallenge(length = 32) {
-      const challenge = new Uint8Array(length);
-      window.crypto.getRandomValues(challenge);
-      return challenge;
-    }
-
-    async function requireAuthentication() {
-      if (!window.PublicKeyCredential) {
-        statusDiv.innerText = "⚠️ 此设备或浏览器不支持设备验证。请使用支持 WebAuthn 的浏览器。";
-        return;
+    // 将 Base64Url 字符串转为 ArrayBuffer
+    function base64UrlToBuffer(base64url) {
+      base64url = base64url.replace(/-/g, '+').replace(/_/g, '/');
+      const padLength = (4 - (base64url.length % 4)) % 4;
+      base64url += '='.repeat(padLength);
+      const str = atob(base64url);
+      const buffer = new ArrayBuffer(str.length);
+      const byteArray = new Uint8Array(buffer);
+      for (let i = 0; i < str.length; i++) {
+        byteArray[i] = str.charCodeAt(i);
       }
+      return buffer;
+    }
 
+    // 伪造服务器生成的注册选项
+    async function getRegisterOptions() {
+      return {
+        publicKey: {
+          challenge: Uint8Array.from(window.crypto.getRandomValues(new Uint8Array(32))),
+          rp: { name: "示例网站" },
+          user: {
+            id: Uint8Array.from(window.crypto.getRandomValues(new Uint8Array(16))),
+            name: "user@example.com",
+            displayName: "示例用户"
+          },
+          pubKeyCredParams: [
+            { type: "public-key", alg: -7 },  // ES256
+            { type: "public-key", alg: -257 } // RS256
+          ],
+          timeout: 60000,
+          attestation: "direct"
+        }
+      };
+    }
+
+    // 伪造服务器生成的登录选项
+    async function getLoginOptions() {
+      return {
+        publicKey: {
+          challenge: Uint8Array.from(window.crypto.getRandomValues(new Uint8Array(32))),
+          allowCredentials: [], // 这里可填之前注册的凭证ID
+          timeout: 60000,
+          userVerification: "preferred"
+        }
+      };
+    }
+
+    document.getElementById('registerBtn').addEventListener('click', async () => {
+      output.textContent = '注册中...';
       try {
-        statusDiv.innerText = "请进行设备验证...";
-        unlockBtn.disabled = true;
+        const options = await getRegisterOptions();
 
-        const credential = await navigator.credentials.get({
-          publicKey: {
-            challenge: generateChallenge(),
-            timeout: 60000,
-            userVerification: "required",
-            allowCredentials: []
-          }
-        });
+        // 调用WebAuthn API创建凭证
+        const credential = await navigator.credentials.create(options);
 
-        // 验证成功，标记已注册通行密钥（示例）
-        localStorage.setItem("hasPasskey", "true");
+        // 简单显示凭证信息
+        const attestationObject = credential.response.attestationObject;
+        const clientDataJSON = credential.response.clientDataJSON;
+        const rawId = credential.rawId;
 
-        unlockSuccess("✅ 设备验证成功，已解锁笔记。");
-      } catch (err) {
-        statusDiv.innerText = "❌ 验证失败或用户取消。";
-        unlockBtn.disabled = false;
+        output.textContent = `注册成功!\nCredential ID: ${bufferToBase64Url(rawId)}\n`;
+      } catch (e) {
+        output.textContent = '注册失败: ' + e;
       }
-    }
+    });
 
-    async function qrLogin() {
-      if (!window.PublicKeyCredential) {
-        statusDiv.innerText = "⚠️ 此设备或浏览器不支持设备验证。";
-        return;
-      }
-
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      output.textContent = '登录中...';
       try {
-        statusDiv.innerText = "请用手机扫码并进行验证...";
-        qrLoginBtn.disabled = true;
+        const options = await getLoginOptions();
 
-        const credential = await navigator.credentials.get({
-          publicKey: {
-            challenge: generateChallenge(),
-            timeout: 60000,
-            userVerification: "required",
-            allowCredentials: []
-          }
-        });
+        // 调用WebAuthn API获取凭证
+        const assertion = await navigator.credentials.get(options);
 
-        unlockSuccess("✅ 扫码验证成功，已解锁笔记。");
-      } catch (err) {
-        statusDiv.innerText = "❌ 验证失败或用户取消。";
-        qrLoginBtn.disabled = false;
+        // 显示凭证信息
+        const authData = assertion.response.authenticatorData;
+        const clientDataJSON = assertion.response.clientDataJSON;
+        const signature = assertion.response.signature;
+        const userHandle = assertion.response.userHandle;
+        const rawId = assertion.rawId;
+
+        output.textContent = `登录成功!\nCredential ID: ${bufferToBase64Url(rawId)}\n`;
+      } catch (e) {
+        output.textContent = '登录失败: ' + e;
       }
-    }
-
-    function passwordLogin() {
-      const input = passwordInput.value.trim();
-      if (input === CORRECT_PASSWORD) {
-        unlockSuccess("✅ 密码正确，已解锁笔记。");
-      } else {
-        statusDiv.innerText = "❌ 密码错误，请重试。";
-      }
-    }
-
-    function unlockSuccess(message) {
-      statusDiv.innerText = message;
-      noteArea.style.display = "block";
-      unlockBtn.style.display = "none";
-      qrLoginBtn.style.display = "none";
-      document.getElementById("passwordLogin").style.display = "none";
-      loadNote();
-    }
-
-    unlockBtn.addEventListener("click", requireAuthentication);
-    qrLoginBtn.addEventListener("click", qrLogin);
-    passwordBtn.addEventListener("click", passwordLogin);
-    saveBtn.addEventListener("click", saveNote);
+    });
   </script>
 </body>
 </html>
