@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>手掌弯曲检测</title>
+  <title>手掌弯曲度检测</title>
   <style>
     html, body {
       margin: 0;
@@ -46,17 +46,14 @@
 
   async function setupCamera() {
     const video = document.getElementById("video");
-
     const constraints = {
       video: {
         facingMode: isMobileDevice() ? { exact: "environment" } : "user"
       },
       audio: false
     };
-
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = stream;
-
     return new Promise((resolve) => {
       video.onloadedmetadata = () => resolve(video);
     });
@@ -71,27 +68,36 @@
     canvas.height = vh;
   }
 
-  function distance(p1, p2) {
-    return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+  function angleBetween(p1, p2, p3) {
+    const v1 = {x: p1.x - p2.x, y: p1.y - p2.y};
+    const v2 = {x: p3.x - p2.x, y: p3.y - p2.y};
+    const dot = v1.x * v2.x + v1.y * v2.y;
+    const len1 = Math.hypot(v1.x, v1.y);
+    const len2 = Math.hypot(v2.x, v2.y);
+    const cosine = dot / (len1 * len2 + 1e-6);
+    return Math.acos(Math.min(Math.max(cosine, -1), 1));
   }
 
-  function estimateBendScore(hand) {
+  function estimateBendScoreByAngle(hand) {
     if (!hand.keypoints || hand.keypoints.length < 21) return 0;
 
-    const base = hand.keypoints[0]; // 手掌中心
-    const tipIndices = [4, 8, 12, 16, 20]; // 指尖：拇指+4根手指
-    let totalScore = 0;
+    const fingerJoints = [
+      [1, 2, 3],   // Thumb
+      [5, 6, 7],   // Index
+      [9, 10, 11], // Middle
+      [13, 14, 15],// Ring
+      [17, 18, 19] // Pinky
+    ];
 
-    tipIndices.forEach(i => {
-      const tip = hand.keypoints[i];
-      const distToBase = distance(tip, base);
-
-      // 假设张开手最大距离为 120 像素
-      let bendRatio = 1 - Math.min(distToBase / 120, 1);
-      totalScore += bendRatio;
+    let totalAngle = 0;
+    fingerJoints.forEach(([a, b, c]) => {
+      const angle = angleBetween(hand.keypoints[a], hand.keypoints[b], hand.keypoints[c]);
+      totalAngle += angle;
     });
 
-    return Math.round(totalScore * 4); // 5根手指 × 4 = 20
+    const maxAnglePerFinger = Math.PI; // ~3.14 radians (180°)
+    const score = (totalAngle / (fingerJoints.length * maxAnglePerFinger)) * 20;
+    return Math.round(score); // Range 0–20
   }
 
   async function initialize() {
@@ -114,27 +120,24 @@
 
         const hands = await detector.estimateHands(video, { flipHorizontal: false });
 
-        hands.forEach(hand => {
-          const bendScore = estimateBendScore(hand); // 0 ~ 20
+        if (hands.length > 0) {
+          const bendScore = estimateBendScoreByAngle(hands[0]); // 可拓展支持多手
 
-          // 获取任意一个关键点位置作为文字位置（比如手腕点）
-          const ref = hand.keypoints[0];
-
-          // 显示分数
+          // 显示在顶部中央
           ctx.fillStyle = "white";
-          ctx.font = "36px sans-serif";
-          ctx.fillText(`弯曲值: ${bendScore}`, ref.x + 10, ref.y - 10);
+          ctx.font = "bold 36px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(`${bendScore}`, canvas.width / 2, 50);
 
           // 可选：绘制关键点
           ctx.fillStyle = "red";
-          hand.keypoints.forEach(pt => {
+          hands[0].keypoints.forEach(pt => {
             ctx.beginPath();
-            ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+            ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
             ctx.fill();
           });
-        });
+        }
       }
-
       requestAnimationFrame(render);
     }
 
