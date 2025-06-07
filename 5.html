@@ -2,29 +2,36 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>摄像头人脸及眼睛检测</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>人脸检测</title>
   <style>
-    /* 整个页面黑色背景，内容居中 */
-    body {
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
       margin: 0;
-      height: 100vh;
+      padding: 0;
+      width: 100%;
+      height: 100%;
       background-color: #000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      color: white;
+      overflow: hidden;
       font-family: Arial, sans-serif;
     }
 
     .video-container {
       position: relative;
+      width: 100vw;
+      height: 100vh;
     }
 
     #video {
-      display: block;
-      position: relative;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
       z-index: 1;
       background-color: #101010;
     }
@@ -34,22 +41,21 @@
       top: 0;
       left: 0;
       z-index: 2;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
   <div class="video-container">
-    <video id="video" autoplay muted></video>
+    <video id="video" autoplay muted playsinline></video>
     <canvas id="overlay"></canvas>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
   <script>
-    // 模型路径
     const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
 
-    // 提前开始加载模型（页面一加载就执行）
     const modelPromise = Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
       faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
@@ -58,35 +64,40 @@
     window.onload = async () => {
       const video = document.getElementById('video');
       const canvas = document.getElementById('overlay');
-      const displaySize = { width: 640, height: 480 };
 
       async function startVideo() {
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
           video.srcObject = stream;
         } catch (err) {
           alert('无法访问摄像头：' + err);
         }
       }
 
-      // 等待模型加载完成
       await modelPromise;
-
-      // 启动摄像头
       await startVideo();
 
       video.addEventListener('play', () => {
-        faceapi.matchDimensions(canvas, displaySize);
+        const resizeCanvas = () => {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+        };
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
 
         setInterval(async () => {
-          const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+          const detections = await faceapi
+            .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
             .withFaceLandmarks();
 
-          const resizedDetections = faceapi.resizeResults(detections, displaySize);
+          const resizedDetections = faceapi.resizeResults(detections, {
+            width: canvas.width,
+            height: canvas.height
+          });
 
           const ctx = canvas.getContext('2d');
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-
           faceapi.draw.drawDetections(canvas, resizedDetections);
           faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
         }, 100);
