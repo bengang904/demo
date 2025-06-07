@@ -2,26 +2,32 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0">
-  <title>人脸五官检测</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>人脸检测</title>
   <style>
     * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
     }
     html, body {
       background-color: #000;
-      overflow: hidden;
+      height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
       width: 100%;
-      height: 100vh;
+      overflow: hidden;
+      touch-action: manipulation; /* 优化触摸操作，禁用双指缩放 */
     }
     .video-container {
       position: relative;
       width: 100%;
-      max-width: 800px;
+      max-width: 700px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      /* 高度会动态设置 */
     }
     video, canvas {
       position: absolute;
@@ -30,9 +36,8 @@
       width: 100%;
       height: auto;
       object-fit: contain;
-      max-width: 800px;
+      max-width: 700px;
     }
-    /* 设置容器高度由视频控制 */
     video {
       display: block;
       width: 100%;
@@ -40,6 +45,16 @@
     }
     canvas {
       pointer-events: none;
+    }
+
+    /* 移动端宽度100% */
+    @media (max-width: 700px) {
+      .video-container {
+        max-width: 100%;
+      }
+      video, canvas {
+        max-width: 100%;
+      }
     }
   </style>
 </head>
@@ -53,6 +68,7 @@
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('overlay');
+    const container = document.querySelector('.video-container');
     const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
 
     Promise.all([
@@ -70,15 +86,15 @@
     }
 
     video.addEventListener('loadedmetadata', () => {
-      // 计算宽高比例
       const aspectRatio = video.videoWidth / video.videoHeight;
-      // 设置canvas宽度和高度和video匹配（真实像素）
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      // 设置容器高度为video按比例缩放后的高度（css宽度700px时）
-      const container = document.querySelector('.video-container');
-      container.style.height = (700 / aspectRatio) + 'px';
+      // 计算宽度：桌面700px以内，移动端100%
+      const displayWidth = Math.min(video.videoWidth, 700, window.innerWidth);
+      const displayHeight = displayWidth / aspectRatio;
+
+      container.style.height = displayHeight + 'px';
 
       detectFaces();
     });
