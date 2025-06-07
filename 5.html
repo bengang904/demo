@@ -3,136 +3,94 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>人脸五官检测</title>
+  <title>摄像头人脸及眼睛检测</title>
   <style>
-    html, body {
-        margin: 0;
-        padding: 0;
-        background-color: black;
-        overflow: hidden;
-        height: 100%;
-        width: 100%;
-        display: flex;
-        justify-content: center; 
-        align-items: center; 
-        color: #ffffff;
+    /* 整个页面黑色背景，内容居中 */
+    body {
+      margin: 0;
+      height: 100vh;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      color: white;
+      font-family: Arial, sans-serif;
     }
 
-    #video, #overlay {
-      object-fit: contain;
-      transform: scaleX(-1); /* 水平镜像 */
+    .video-container {
+      position: relative;
     }
 
     #video {
-      display: none; /* 视频隐藏，只用canvas显示 */
+      display: block;
+      position: relative;
+      z-index: 1;
+      background-color: #101010;
     }
 
-    #loading {
+    #overlay {
       position: absolute;
-      top: 10px;
-      text-align: center;
-      width: 100%;
-      font-size: 1.2rem;
+      top: 0;
+      left: 0;
+      z-index: 2;
     }
   </style>
 </head>
 <body>
-  <div id="loading">正在加载模型和摄像头，请稍候...</div>
-  <video id="video" autoplay muted playsinline></video>
-  <canvas id="overlay" width="640" height="480"></canvas>
+  <div class="video-container">
+    <video id="video" autoplay muted></video>
+    <canvas id="overlay"></canvas>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
   <script>
+    // 模型路径
     const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
 
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('overlay');
-    const loading = document.getElementById('loading');
-    const ctx = canvas.getContext('2d');
-    const displaySize = { width: 640, height: 480 };
+    // 提前开始加载模型（页面一加载就执行）
+    const modelPromise = Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
+    ]);
 
-    let detecting = false;
-    let hasDrawn = false; // 标记是否已经有过绘制内容
+    window.onload = async () => {
+      const video = document.getElementById('video');
+      const canvas = document.getElementById('overlay');
+      const displaySize = { width: 640, height: 480 };
 
-    async function loadModels() {
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
-      ]);
-      console.log('模型加载完成');
-    }
-
-    async function startVideo() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: displaySize.width, height: displaySize.height } });
-        video.srcObject = stream;
-        return new Promise(resolve => {
-          video.onloadedmetadata = () => {
-            video.play();
-            resolve();
-          };
-        });
-      } catch (err) {
-        loading.textContent = '无法访问摄像头，请检查权限或设备';
-        console.error('摄像头启动失败:', err);
-        throw err;
-      }
-    }
-
-    async function detectFaces() {
-      if (detecting) return;
-      detecting = true;
-
-      try {
-        if (video.readyState !== 4) {
-          detecting = false;
-          return;
+      async function startVideo() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+          video.srcObject = stream;
+        } catch (err) {
+          alert('无法访问摄像头：' + err);
         }
-
-        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-          .withFaceLandmarks();
-
-        const resizedDetections = faceapi.resizeResults(detections, displaySize);
-
-        if (resizedDetections.length > 0) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          faceapi.draw.drawDetections(canvas, resizedDetections);
-          faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-          hasDrawn = true;
-        } else {
-          if (!hasDrawn) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-          }
-          // 不清除画布，保持之前画面
-        }
-      } catch (error) {
-        console.error('检测出错:', error);
       }
 
-      detecting = false;
-    }
+      // 等待模型加载完成
+      await modelPromise;
 
-    async function run() {
-      loading.textContent = '正在加载模型...';
-      await loadModels();
-
-      loading.textContent = '正在启动摄像头...';
+      // 启动摄像头
       await startVideo();
 
-      faceapi.matchDimensions(canvas, displaySize);
+      video.addEventListener('play', () => {
+        faceapi.matchDimensions(canvas, displaySize);
 
-      loading.style.display = 'none';
+        setInterval(async () => {
+          const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+            .withFaceLandmarks();
 
-      async function detectionLoop() {
-        await detectFaces();
-        requestAnimationFrame(detectionLoop);
-      }
+          const resizedDetections = faceapi.resizeResults(detections, displaySize);
 
-      detectionLoop();
-    }
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    window.onload = () => {
-      run();
+          faceapi.draw.drawDetections(canvas, resizedDetections);
+          faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+        }, 100);
+      });
     };
   </script>
 </body>
