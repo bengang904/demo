@@ -1,62 +1,150 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>阻止离开页面</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 50px;
-            background-color: #f5f5f5;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>稳定无闪烁的摄像头人脸及眼睛检测</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+      display: flex;
+      justify-content: center; 
+      align-items: center; 
+      color: white;
+      font-family: sans-serif;
+    }
 
-        h1 {
-            font-size: 30px;
-            color: #333;
-        }
+    #video, #overlay {
+      object-fit: contain;
+      transform: scaleX(-1); /* 水平镜像 */
+    }
 
-        p {
-            font-size: 18px;
-            color: #666;
-            margin-top: 20px;
-        }
+    #video {
+      display: none; /* 视频隐藏，只用canvas显示 */
+    }
 
-        button {
-            padding: 10px 20px;
-            font-size: 18px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+    #overlay {
+      pointer-events: none;
+      z-index: 10;
+      background-color: transparent;
+      width: 640px;
+      height: 480px;
+      border: 1px solid #444;
+      border-radius: 8px;
+    }
 
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    #loading {
+      position: absolute;
+      top: 10px;
+      text-align: center;
+      width: 100%;
+      font-size: 1.2rem;
+    }
+  </style>
 </head>
 <body>
-    <h1>阻止页面离开示例</h1>
-    <p>点击按钮并尝试关闭或刷新页面，您将看到提示框。</p>
-    <button id="triggerButton">点击进行测试</button>
+  <div id="loading">正在加载模型和摄像头，请稍候...</div>
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="overlay" width="640" height="480"></canvas>
 
-    <script>
-        // 监听beforeunload事件，阻止离开页面
-        window.addEventListener('beforeunload', function(event) {
-            // 显示默认的离开提示框
-            const message = "您有未保存的内容，确定要离开吗？";
-            event.returnValue = message;  // 标准方法
-            return message;  // 兼容一些旧浏览器
-        });
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <script>
+    const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
 
-        // 测试按钮：触发某些操作
-        const triggerButton = document.getElementById('triggerButton');
-        triggerButton.addEventListener('click', function() {
-            alert('您点击了按钮！尝试刷新或离开页面...');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('overlay');
+    const loading = document.getElementById('loading');
+    const ctx = canvas.getContext('2d');
+    const displaySize = { width: 640, height: 480 };
+
+    let detecting = false;
+    let hasDrawn = false; // 标记是否已经有过绘制内容
+
+    async function loadModels() {
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
+      ]);
+      console.log('模型加载完成');
+    }
+
+    async function startVideo() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: displaySize.width, height: displaySize.height } });
+        video.srcObject = stream;
+        return new Promise(resolve => {
+          video.onloadedmetadata = () => {
+            video.play();
+            resolve();
+          };
         });
-    </script>
+      } catch (err) {
+        loading.textContent = '无法访问摄像头，请检查权限或设备';
+        console.error('摄像头启动失败:', err);
+        throw err;
+      }
+    }
+
+    async function detectFaces() {
+      if (detecting) return;
+      detecting = true;
+
+      try {
+        if (video.readyState !== 4) {
+          detecting = false;
+          return;
+        }
+
+        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks();
+
+        const resizedDetections = faceapi.resizeResults(detections, displaySize);
+
+        if (resizedDetections.length > 0) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          faceapi.draw.drawDetections(canvas, resizedDetections);
+          faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+          hasDrawn = true;
+        } else {
+          if (!hasDrawn) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          }
+          // 不清除画布，保持之前画面
+        }
+      } catch (error) {
+        console.error('检测出错:', error);
+      }
+
+      detecting = false;
+    }
+
+    async function run() {
+      loading.textContent = '正在加载模型...';
+      await loadModels();
+
+      loading.textContent = '正在启动摄像头...';
+      await startVideo();
+
+      faceapi.matchDimensions(canvas, displaySize);
+
+      loading.style.display = 'none';
+
+      async function detectionLoop() {
+        await detectFaces();
+        requestAnimationFrame(detectionLoop);
+      }
+
+      detectionLoop();
+    }
+
+    window.onload = () => {
+      run();
+    };
+  </script>
 </body>
 </html>
