@@ -1,118 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>WebXR 地面追踪示例</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR Ground Plane Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.2.0/dist/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-ar.js@4.0.0/dist/aframe-ar.js"></script>
   <style>
-    body { margin: 0; overflow: hidden; }
-    #ar-button { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; background: #FF5733; color: white; font-size: 16px; border: none; border-radius: 6px; cursor: pointer; }
+    body { margin: 0; }
+    canvas { display: block; }
   </style>
 </head>
-<body>
-  <button id="ar-button">Enter AR</button>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
+<body style="margin: 0; overflow: hidden;">
+  <!-- 使用 A-Frame 初始化 WebXR AR 场景 -->
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+    <!-- AR 摄像头 -->
+    <a-entity camera></a-entity>
+
+    <!-- 地面网格 -->
+    <a-entity id="grid" position="0 0 0" scale="2 2 2">
+      <a-plane color="green" height="10" width="10" rotation="-90 0 0"></a-plane>
+    </a-entity>
+    
+    <!-- 可以插入其他元素 -->
+  </a-scene>
+
+  <!-- 开始 WebXR 设备 -->
   <script>
-    let camera, scene, renderer;
-    let controller;
-    let reticle;
-    let hitTestSource = null;
-    let hitTestSourceRequested = false;
-
-    init();
-
-    function init() {
-      scene = new THREE.Scene();
-
-      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.xr.enabled = true;
-      document.body.appendChild(renderer.domElement);
-
-      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-      scene.add(light);
-
-      // 地面追踪标记（一个环形网格）
-      reticle = new THREE.Mesh(
-        new THREE.RingGeometry(0.1, 0.15, 32).rotateX(- Math.PI / 2),
-        new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-      );
-      reticle.matrixAutoUpdate = false;
-      reticle.visible = false;
-      scene.add(reticle);
-
-      controller = renderer.xr.getController(0);
-      scene.add(controller);
-
-      controller.addEventListener('select', () => {
-        if (reticle.visible) {
-          const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-          const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-          const mesh = new THREE.Mesh(geometry, material);
-          mesh.position.setFromMatrixPosition(reticle.matrix);
-          mesh.quaternion.setFromRotationMatrix(reticle.matrix);
-          scene.add(mesh);
-        }
-      });
-
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
-
-      // AR 按钮点击启动 AR 会话
-      const arButton = document.getElementById('ar-button');
-      arButton.addEventListener('click', () => {
-        navigator.xr.requestSession('immersive-ar', {
-          requiredFeatures: ['hit-test', 'dom-overlay'],
-          domOverlay: { root: document.body }
-        }).then(onSessionStarted);
-      });
-    }
-
-    function onSessionStarted(session) {
-      renderer.xr.setSession(session);
-
-      session.addEventListener('end', () => {
-        hitTestSourceRequested = false;
-        hitTestSource = null;
-        reticle.visible = false;
-        document.getElementById('ar-button').style.display = 'block';
-      });
-
-      document.getElementById('ar-button').style.display = 'none';
-
-      session.requestReferenceSpace('viewer').then((referenceSpace) => {
-        session.requestHitTestSource({ space: referenceSpace }).then((source) => {
-          hitTestSource = source;
+    document.querySelector('a-scene').addEventListener('loaded', () => {
+      const scene = document.querySelector('a-scene');
+      const xr = scene.querySelector('[camera]');
+      // 使用WebXRAPI初始化环境
+      navigator.xr.requestSession('immersive-ar', {
+        requiredFeatures: ['hit-test'],
+        optionalFeatures: ['local', 'plane-detection']
+      }).then(session => {
+        session.addEventListener('end', () => {
+          // 当AR会话结束时的处理
         });
-      });
 
-      renderer.setAnimationLoop(render);
-    }
+        // 开始会话
+        const xrReferenceSpace = session.requestReferenceSpace('local');
+        const hitTestSource = xr.createHitTestSource({
+          space: xrReferenceSpace
+        });
 
-    function render(timestamp, frame) {
-      if (frame) {
-        const referenceSpace = renderer.xr.getReferenceSpace();
-        const session = renderer.xr.getSession();
-
-        if (hitTestSource) {
+        // 定时更新每一帧
+        function onXRFrame(time, frame) {
           const hitTestResults = frame.getHitTestResults(hitTestSource);
           if (hitTestResults.length > 0) {
-            const hit = hitTestResults[0];
-            const pose = hit.getPose(referenceSpace);
-
-            reticle.visible = true;
-            reticle.matrix.fromArray(pose.transform.matrix);
-          } else {
-            reticle.visible = false;
+            const hitPose = hitTestResults[0].getPose(xrReferenceSpace);
+            if (hitPose) {
+              // 获取检测到的平面并更新网格位置
+              const position = hitPose.transform.position;
+              const gridEntity = document.querySelector('#grid');
+              gridEntity.setAttribute('position', position);
+            }
           }
+          session.requestAnimationFrame(onXRFrame);
         }
-      }
-      renderer.render(scene, camera);
-    }
+        session.requestAnimationFrame(onXRFrame);
+      });
+    });
   </script>
 </body>
 </html>
