@@ -2,60 +2,55 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>竖直居中人脸检测</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>竖直居中人脸检测（镜像版）</title>
   <style>
-    * {
+    html, body {
       margin: 0;
       padding: 0;
-      box-sizing: border-box;
-    }
-    html, body {
-      background-color: #000;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      background-color: black;
+      overflow: hidden;
+      height: 100%;
       width: 100%;
-    }
-    .video-container {
-      position: relative;
-      max-width: 100%;
-      width: 700px;
       display: flex;
-      justify-content: center;
-      align-items: center;
+      justify-content: center; 
+      align-items: center; 
     }
-    video, canvas {
+
+    #video, #overlay {
       position: absolute;
-      top: 0;
-      left: 0;
-      max-width: 100%;
-      height: auto;
       object-fit: contain;
-      width: 700px;
-    }
-    video {
-      display: block;
+      transform: scaleX(-1); /* 水平镜像 */
+      max-width: 700px;
       width: 100%;
       height: auto;
+      top: 50%;
+      left: 50%;
+      transform-origin: center center;
+      /* 为了水平镜像和居中，结合translate */
+      /* 下面的transform覆盖了上面scaleX，这里改用组合写法 */
     }
-    canvas {
+
+    /* 修正 transform，合并 translate 和 scaleX */
+    #video {
+      transform: translate(-50%, -50%) scaleX(-1);
+      z-index: 1;
+    }
+    #overlay {
+      transform: translate(-50%, -50%) scaleX(-1);
+      z-index: 2;
       pointer-events: none;
     }
   </style>
 </head>
 <body>
-  <div class="video-container">
-    <video id="video" autoplay muted playsinline></video>
-    <canvas id="overlay"></canvas>
-  </div>
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="overlay"></canvas>
 
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('overlay');
-    const container = document.querySelector('.video-container');
     const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
 
     Promise.all([
@@ -73,16 +68,9 @@
     }
 
     video.addEventListener('loadedmetadata', () => {
-      const aspectRatio = video.videoWidth / video.videoHeight;
+      // 设置canvas尺寸和视频的实际尺寸一致，保证绘制精确
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-
-      // 计算按最大宽700px后的高度
-      const displayWidth = Math.min(video.videoWidth, 700);
-      const displayHeight = displayWidth / aspectRatio;
-
-      // 动态设置容器高度
-      container.style.height = displayHeight + 'px';
 
       detectFaces();
     });
