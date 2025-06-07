@@ -2,19 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>WebXR 地面追踪示例</title>
+  <title>WebXR Hit Test 地面追踪示例</title>
   <style>
-    body { margin: 0; overflow: hidden; }
-    #ar-button { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; background: #FF5733; color: white; font-size: 16px; border: none; border-radius: 6px; cursor: pointer; }
+    body, html { margin: 0; overflow: hidden; height: 100%; }
+    #info { position: absolute; top: 10px; left: 10px; color: white; font-family: sans-serif; }
   </style>
 </head>
 <body>
-  <button id="ar-button">Enter AR</button>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
+  <div id="info">点击屏幕开始 AR</div>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+
   <script>
+    let container;
     let camera, scene, renderer;
     let controller;
-    let reticle;
+    let reticle; // 放置点的指示器
+    let xrSession = null;
     let hitTestSource = null;
     let hitTestSourceRequested = false;
 
@@ -30,90 +33,111 @@
       renderer.xr.enabled = true;
       document.body.appendChild(renderer.domElement);
 
+      // 添加灯光
       const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+      light.position.set(0.5, 1, 0.25);
       scene.add(light);
 
-      // 地面追踪标记（一个环形网格）
-      reticle = new THREE.Mesh(
-        new THREE.RingGeometry(0.1, 0.15, 32).rotateX(- Math.PI / 2),
-        new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-      );
+      // 创建一个可见的放置指示器（环形）
+      const ringGeometry = new THREE.RingGeometry(0.07, 0.1, 32).rotateX(- Math.PI / 2);
+      const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+      reticle = new THREE.Mesh(ringGeometry, ringMaterial);
       reticle.matrixAutoUpdate = false;
       reticle.visible = false;
       scene.add(reticle);
 
-      controller = renderer.xr.getController(0);
-      scene.add(controller);
+      // 3D盒子，放置在地面上
+      const boxGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+      const boxMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+      box = new THREE.Mesh(boxGeometry, boxMaterial);
+      box.visible = false;
+      scene.add(box);
 
-      controller.addEventListener('select', () => {
-        if (reticle.visible) {
-          const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-          const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-          const mesh = new THREE.Mesh(geometry, material);
-          mesh.position.setFromMatrixPosition(reticle.matrix);
-          mesh.quaternion.setFromRotationMatrix(reticle.matrix);
-          scene.add(mesh);
+      // 点击屏幕，开始 WebXR AR 会话
+      document.body.addEventListener('click', () => {
+        if (xrSession === null) {
+          startXR();
+          document.getElementById('info').style.display = 'none';
         }
       });
 
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
-
-      // AR 按钮点击启动 AR 会话
-      const arButton = document.getElementById('ar-button');
-      arButton.addEventListener('click', () => {
-        navigator.xr.requestSession('immersive-ar', {
-          requiredFeatures: ['hit-test', 'dom-overlay'],
-          domOverlay: { root: document.body }
-        }).then(onSessionStarted);
-      });
+      window.addEventListener('resize', onWindowResize, false);
     }
 
-    function onSessionStarted(session) {
-      renderer.xr.setSession(session);
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
 
-      session.addEventListener('end', () => {
-        hitTestSourceRequested = false;
-        hitTestSource = null;
-        reticle.visible = false;
-        document.getElementById('ar-button').style.display = 'block';
-      });
-
-      document.getElementById('ar-button').style.display = 'none';
-
-      session.requestReferenceSpace('viewer').then((referenceSpace) => {
-        session.requestHitTestSource({ space: referenceSpace }).then((source) => {
-          hitTestSource = source;
-        });
-      });
-
-      renderer.setAnimationLoop(render);
+      renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    function render(timestamp, frame) {
-      if (frame) {
-        const referenceSpace = renderer.xr.getReferenceSpace();
-        const session = renderer.xr.getSession();
+    async function startXR() {
+      if (navigator.xr) {
+        try {
+          xrSession = await navigator.xr.requestSession('immersive-ar', {
+            requiredFeatures: ['hit-test', 'dom-overlay'],
+            domOverlay: { root: document.body }
+          });
 
-        if (hitTestSource) {
-          const hitTestResults = frame.getHitTestResults(hitTestSource);
-          if (hitTestResults.length > 0) {
-            const hit = hitTestResults[0];
-            const pose = hit.getPose(referenceSpace);
+          renderer.xr.setSession(xrSession);
 
-            reticle.visible = true;
-            reticle.matrix.fromArray(pose.transform.matrix);
-          } else {
+          const referenceSpace = await xrSession.requestReferenceSpace('local');
+
+          // 获取 XRFrame 来执行 hit test
+          xrSession.requestAnimationFrame(onXRFrame);
+
+          // 获取 hit test source
+          const viewerSpace = await xrSession.requestReferenceSpace('viewer');
+          hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
+
+          xrSession.addEventListener('end', () => {
+            xrSession = null;
+            hitTestSourceRequested = false;
+            hitTestSource = null;
             reticle.visible = false;
-          }
+            box.visible = false;
+            document.getElementById('info').style.display = 'block';
+          });
+
+        } catch (e) {
+          alert('无法开始 WebXR AR 会话: ' + e);
+        }
+      } else {
+        alert('您的设备或浏览器不支持 WebXR');
+      }
+    }
+
+    function onXRFrame(time, frame) {
+      const session = frame.session;
+      session.requestAnimationFrame(onXRFrame);
+
+      const referenceSpace = renderer.xr.getReferenceSpace();
+      const pose = frame.getViewerPose(referenceSpace);
+
+      if (pose) {
+        const hitTestResults = frame.getHitTestResults(hitTestSource);
+
+        if (hitTestResults.length > 0) {
+          const hit = hitTestResults[0];
+          const hitPose = hit.getPose(referenceSpace);
+
+          // 显示并移动 reticle
+          reticle.visible = true;
+          reticle.matrix.fromArray(hitPose.transform.matrix);
+          reticle.matrix.decompose(reticle.position, reticle.quaternion, reticle.scale);
+
+          // 将 box 放到 reticle 位置
+          box.visible = true;
+          box.position.copy(reticle.position);
+          box.quaternion.copy(reticle.quaternion);
+        } else {
+          reticle.visible = false;
+          box.visible = false;
         }
       }
+
       renderer.render(scene, camera);
     }
   </script>
 </body>
 </html>
- 
