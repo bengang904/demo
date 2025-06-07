@@ -1,141 +1,106 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>WebXR Hit Test 地面追踪示例</title>
-  <style>
-    body, html { margin: 0; overflow: hidden; height: 100%; }
-    #info { position: absolute; top: 10px; left: 10px; color: white; font-family: sans-serif; }
-  </style>
+  <title>WebXR 地面检测示例</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>body,html{margin:0;overflow:hidden;height:100%;background:#000;}</style>
 </head>
 <body>
-  <div id="info">点击屏幕开始 AR</div>
+  <button id="start-ar" style="position:absolute;top:20px;left:20px;z-index:1;padding:10px 20px;">开始 AR</button>
   <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
-
   <script>
-    let container;
-    let camera, scene, renderer;
-    let controller;
-    let reticle; // 放置点的指示器
-    let xrSession = null;
-    let hitTestSource = null;
-    let hitTestSourceRequested = false;
+    let renderer, scene, camera, reticle, controller, xrSession, hitTestSource;
+    let cube;
 
-    init();
+    const startButton = document.getElementById('start-ar');
 
-    function init() {
-      scene = new THREE.Scene();
+    startButton.addEventListener('click', async () => {
+      if (navigator.xr) {
+        if (await navigator.xr.isSessionSupported('immersive-ar')) {
+          startButton.style.display = 'none';
+          startAR();
+        } else {
+          alert('设备不支持 immersive-ar 会话');
+        }
+      } else {
+        alert('浏览器不支持 WebXR');
+      }
+    });
 
-      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+    async function startAR() {
+      xrSession = await navigator.xr.requestSession('immersive-ar', {
+        requiredFeatures: ['hit-test']
+      });
 
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.xr.enabled = true;
       document.body.appendChild(renderer.domElement);
 
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera();
+
       // 添加灯光
       const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
       light.position.set(0.5, 1, 0.25);
       scene.add(light);
 
-      // 创建一个可见的放置指示器（环形）
-      const ringGeometry = new THREE.RingGeometry(0.07, 0.1, 32).rotateX(- Math.PI / 2);
+      // 放置指示器 (reticle)
+      const ringGeometry = new THREE.RingGeometry(0.1, 0.12, 32).rotateX(-Math.PI / 2);
       const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff });
       reticle = new THREE.Mesh(ringGeometry, ringMaterial);
-      reticle.matrixAutoUpdate = false;
       reticle.visible = false;
       scene.add(reticle);
 
-      // 3D盒子，放置在地面上
-      const boxGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-      const boxMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-      box = new THREE.Mesh(boxGeometry, boxMaterial);
-      box.visible = false;
-      scene.add(box);
+      // 创建一个立方体，初始隐藏
+      const cubeGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+      const cubeMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+      cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+      cube.visible = false;
+      scene.add(cube);
 
-      // 点击屏幕，开始 WebXR AR 会话
-      document.body.addEventListener('click', () => {
-        if (xrSession === null) {
-          startXR();
-          document.getElementById('info').style.display = 'none';
-        }
+      // 设置XR渲染和session
+      renderer.xr.setReferenceSpaceType('local');
+      await renderer.xr.setSession(xrSession);
+
+      // 请求hit test source
+      const viewerSpace = await xrSession.requestReferenceSpace('viewer');
+      hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
+
+      xrSession.addEventListener('end', () => {
+        hitTestSource = null;
+        reticle.visible = false;
+        cube.visible = false;
+        if (renderer.domElement) document.body.removeChild(renderer.domElement);
+        startButton.style.display = 'block';
       });
 
-      window.addEventListener('resize', onWindowResize, false);
-    }
-
-    function onWindowResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    async function startXR() {
-      if (navigator.xr) {
-        try {
-          xrSession = await navigator.xr.requestSession('immersive-ar', {
-            requiredFeatures: ['hit-test', 'dom-overlay'],
-            domOverlay: { root: document.body }
-          });
-
-          renderer.xr.setSession(xrSession);
-
-          const referenceSpace = await xrSession.requestReferenceSpace('local');
-
-          // 获取 XRFrame 来执行 hit test
-          xrSession.requestAnimationFrame(onXRFrame);
-
-          // 获取 hit test source
-          const viewerSpace = await xrSession.requestReferenceSpace('viewer');
-          hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
-
-          xrSession.addEventListener('end', () => {
-            xrSession = null;
-            hitTestSourceRequested = false;
-            hitTestSource = null;
-            reticle.visible = false;
-            box.visible = false;
-            document.getElementById('info').style.display = 'block';
-          });
-
-        } catch (e) {
-          alert('无法开始 WebXR AR 会话: ' + e);
-        }
-      } else {
-        alert('您的设备或浏览器不支持 WebXR');
-      }
+      renderer.setAnimationLoop(onXRFrame);
     }
 
     function onXRFrame(time, frame) {
       const session = frame.session;
-      session.requestAnimationFrame(onXRFrame);
-
       const referenceSpace = renderer.xr.getReferenceSpace();
       const pose = frame.getViewerPose(referenceSpace);
 
       if (pose) {
         const hitTestResults = frame.getHitTestResults(hitTestSource);
-
         if (hitTestResults.length > 0) {
           const hit = hitTestResults[0];
           const hitPose = hit.getPose(referenceSpace);
 
-          // 显示并移动 reticle
           reticle.visible = true;
-          reticle.matrix.fromArray(hitPose.transform.matrix);
-          reticle.matrix.decompose(reticle.position, reticle.quaternion, reticle.scale);
+          reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
+          reticle.updateMatrixWorld(true);
 
-          // 将 box 放到 reticle 位置
-          box.visible = true;
-          box.position.copy(reticle.position);
-          box.quaternion.copy(reticle.quaternion);
+          // 让立方体跟随reticle位置显示
+          cube.visible = true;
+          cube.position.copy(reticle.position);
         } else {
           reticle.visible = false;
-          box.visible = false;
+          cube.visible = false;
         }
       }
-
       renderer.render(scene, camera);
     }
   </script>
