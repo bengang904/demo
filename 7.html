@@ -1,106 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>WebXR 地面检测示例</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>body,html{margin:0;overflow:hidden;height:100%;background:#000;}</style>
+  <meta charset="UTF-8" />
+  <title>WebXR 地面检测示例（绿色平面标注）</title>
+  <style>
+    body, html { margin: 0; overflow: hidden; height: 100%; background: black; }
+    #info { position: absolute; top: 10px; left: 10px; color: white; font-family: sans-serif; z-index: 1; }
+  </style>
 </head>
 <body>
-  <button id="start-ar" style="position:absolute;top:20px;left:20px;z-index:1;padding:10px 20px;">开始 AR</button>
+  <div id="info">点击屏幕开始 AR，检测地面时会显示绿色平面</div>
+
   <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+
   <script>
-    let renderer, scene, camera, reticle, controller, xrSession, hitTestSource;
-    let cube;
+    let camera, scene, renderer;
+    let xrSession = null;
+    let hitTestSource = null;
+    let reticle;  // 绿色平面
+    let hitTestSourceRequested = false;
 
-    const startButton = document.getElementById('start-ar');
+    init();
 
-    startButton.addEventListener('click', async () => {
-      if (navigator.xr) {
-        if (await navigator.xr.isSessionSupported('immersive-ar')) {
-          startButton.style.display = 'none';
-          startAR();
-        } else {
-          alert('设备不支持 immersive-ar 会话');
-        }
-      } else {
-        alert('浏览器不支持 WebXR');
-      }
-    });
+    function init() {
+      scene = new THREE.Scene();
 
-    async function startAR() {
-      xrSession = await navigator.xr.requestSession('immersive-ar', {
-        requiredFeatures: ['hit-test']
-      });
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.01, 20);
 
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.xr.enabled = true;
       document.body.appendChild(renderer.domElement);
 
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera();
-
-      // 添加灯光
-      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-      light.position.set(0.5, 1, 0.25);
-      scene.add(light);
-
-      // 放置指示器 (reticle)
-      const ringGeometry = new THREE.RingGeometry(0.1, 0.12, 32).rotateX(-Math.PI / 2);
-      const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-      reticle = new THREE.Mesh(ringGeometry, ringMaterial);
+      // 绿色平面，表示检测到的地面位置
+      const geometry = new THREE.PlaneGeometry(0.3, 0.3);
+      const material = new THREE.MeshBasicMaterial({color: 0x00ff00, opacity: 0.5, transparent: true});
+      reticle = new THREE.Mesh(geometry, material);
+      reticle.rotation.x = - Math.PI / 2;  // 平面水平放置
       reticle.visible = false;
       scene.add(reticle);
 
-      // 创建一个立方体，初始隐藏
-      const cubeGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-      const cubeMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-      cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-      cube.visible = false;
-      scene.add(cube);
-
-      // 设置XR渲染和session
-      renderer.xr.setReferenceSpaceType('local');
-      await renderer.xr.setSession(xrSession);
-
-      // 请求hit test source
-      const viewerSpace = await xrSession.requestReferenceSpace('viewer');
-      hitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
-
-      xrSession.addEventListener('end', () => {
-        hitTestSource = null;
-        reticle.visible = false;
-        cube.visible = false;
-        if (renderer.domElement) document.body.removeChild(renderer.domElement);
-        startButton.style.display = 'block';
+      document.body.addEventListener('click', () => {
+        if (!xrSession) {
+          startXR();
+          document.getElementById('info').style.display = 'none';
+        }
       });
 
-      renderer.setAnimationLoop(onXRFrame);
+      window.addEventListener('resize', onWindowResize, false);
     }
 
-    function onXRFrame(time, frame) {
-      const session = frame.session;
-      const referenceSpace = renderer.xr.getReferenceSpace();
-      const pose = frame.getViewerPose(referenceSpace);
+    function onWindowResize() {
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
 
-      if (pose) {
-        const hitTestResults = frame.getHitTestResults(hitTestSource);
-        if (hitTestResults.length > 0) {
-          const hit = hitTestResults[0];
-          const hitPose = hit.getPose(referenceSpace);
+    async function startXR() {
+      if (navigator.xr) {
+        try {
+          xrSession = await navigator.xr.requestSession('immersive-ar', {
+            requiredFeatures: ['hit-test']
+          });
+          renderer.xr.setSession(xrSession);
 
-          reticle.visible = true;
-          reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
-          reticle.updateMatrixWorld(true);
+          const referenceSpace = await xrSession.requestReferenceSpace('local');
+          const viewerSpace = await xrSession.requestReferenceSpace('viewer');
 
-          // 让立方体跟随reticle位置显示
-          cube.visible = true;
-          cube.position.copy(reticle.position);
-        } else {
-          reticle.visible = false;
-          cube.visible = false;
+          hitTestSource = await xrSession.requestHitTestSource({space: viewerSpace});
+
+          xrSession.addEventListener('end', () => {
+            xrSession = null;
+            hitTestSource = null;
+            reticle.visible = false;
+            document.getElementById('info').style.display = 'block';
+          });
+
+          xrSession.requestAnimationFrame((time, frame) => onXRFrame(time, frame, referenceSpace));
+        } catch(e) {
+          alert('无法启动 WebXR AR: ' + e);
         }
+      } else {
+        alert('您的设备或浏览器不支持 WebXR');
       }
+    }
+
+    function onXRFrame(time, frame, referenceSpace) {
+      const session = frame.session;
+      session.requestAnimationFrame((t, f) => onXRFrame(t, f, referenceSpace));
+
+      const pose = frame.getViewerPose(referenceSpace);
+      if (!pose) return;
+
+      const hitTestResults = frame.getHitTestResults(hitTestSource);
+
+      if (hitTestResults.length > 0) {
+        const hit = hitTestResults[0];
+        const hitPose = hit.getPose(referenceSpace);
+
+        // 显示绿色平面并更新位置旋转
+        reticle.visible = true;
+        reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
+        reticle.quaternion.set(hitPose.transform.orientation.x, hitPose.transform.orientation.y, hitPose.transform.orientation.z, hitPose.transform.orientation.w);
+
+      } else {
+        reticle.visible = false;
+      }
+
       renderer.render(scene, camera);
     }
   </script>
