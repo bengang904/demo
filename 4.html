@@ -1,118 +1,148 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 50px;
-            background: #f1f1f1;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>手掌弯曲检测（0-20）</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-        .message {
-            background: #ffeb3b;
-            color: #d32f2f;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: none;
-        }
+    #video, #canvas {
+      object-fit: contain;
+    }
 
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all 0.3s ease-in-out;
-        }
+    #video {
+      display: none;
+    }
 
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    #canvas {
+      z-index: 10;
+    }
+  </style>
 </head>
 <body>
-    <!-- 提示信息 -->
-    <div class="message" id="warningMessage">
-        请在微信浏览器中打开此页面。
-    </div>
 
-    <div>
-        <button id="fullscreenBtn">开始执行</button>
-    </div>
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
 
-    <script>
-        // 判断是否是微信浏览器
-        function isWeChatBrowser() {
-            const userAgent = navigator.userAgent.toLowerCase();
-            return userAgent.includes('micromessenger');
-        }
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
 
-        const fullscreenBtn = document.getElementById('fullscreenBtn');
-        const warningMessage = document.getElementById('warningMessage');
-        let fullscreenInterval;
+<script>
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
 
-        // 如果不是微信浏览器，显示提示信息
-        if (!isWeChatBrowser()) {
-            warningMessage.style.display = 'block';
-            fullscreenBtn.style.display = 'none';  // 隐藏按钮
-        }
+  async function setupCamera() {
+    const video = document.getElementById("video");
 
-        // 进入全屏的函数
-        function enterFullscreen() {
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen();  // 标准浏览器方法
-            } else if (document.documentElement.mozRequestFullScreen) {
-                document.documentElement.mozRequestFullScreen();  // Firefox
-            } else if (document.documentElement.webkitRequestFullscreen) {
-                document.documentElement.webkitRequestFullscreen();  // Chrome, Safari 和 Opera
-            } else if (document.documentElement.msRequestFullscreen) {
-                document.documentElement.msRequestFullscreen();  // IE/Edge
-            }
-        }
+    const constraints = {
+      video: {
+        facingMode: isMobileDevice() ? { exact: "environment" } : "user"
+      },
+      audio: false
+    };
 
-        // 退出全屏的函数
-        function exitFullscreen() {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();  // 标准浏览器方法
-            } else if (document.mozCancelFullScreen) {
-                document.mozCancelFullScreen();  // Firefox
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();  // Chrome, Safari 和 Opera
-            } else if (document.msExitFullscreen) {
-                document.msExitFullscreen();  // IE/Edge
-            }
-        }
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = stream;
 
-        // 开始/停止循环的函数
-        function toggleFullscreenLoop() {
-            // 检查是否已经在循环中，如果是，清除定时器停止循环
-            if (fullscreenInterval) {
-                clearInterval(fullscreenInterval);
-                fullscreenInterval = null;
-                fullscreenBtn.textContent = '开始循环';  // 更改按钮文本
-            } else {
-                // 启动循环，每50毫秒退出并重新进入全屏
-                fullscreenInterval = setInterval(() => {
-                    if (document.fullscreenElement) {
-                        exitFullscreen();
-                    } else {
-                        enterFullscreen();
-                    }
-                }, 50);
-                fullscreenBtn.textContent = '停止循环';  // 更改按钮文本
-            }
-        }
+    return new Promise((resolve) => {
+      video.onloadedmetadata = () => resolve(video);
+    });
+  }
 
-        // 监听按钮点击事件
-        fullscreenBtn.addEventListener('click', toggleFullscreenLoop);
+  function resizeElements(video, canvas) {
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    video.width = vw;
+    video.height = vh;
+    canvas.width = vw;
+    canvas.height = vh;
+  }
 
-    </script>
+  function distance(p1, p2) {
+    return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+  }
+
+  function estimateBendScore(hand) {
+    if (!hand.keypoints || hand.keypoints.length < 21) return 0;
+
+    const base = hand.keypoints[0]; // 手掌中心
+    const tipIndices = [4, 8, 12, 16, 20]; // 指尖：拇指+4根手指
+    let totalScore = 0;
+
+    tipIndices.forEach(i => {
+      const tip = hand.keypoints[i];
+      const distToBase = distance(tip, base);
+
+      // 假设张开手最大距离为 120 像素
+      let bendRatio = 1 - Math.min(distToBase / 120, 1);
+      totalScore += bendRatio;
+    });
+
+    return Math.round(totalScore * 4); // 5根手指 × 4 = 20
+  }
+
+  async function initialize() {
+    const video = await setupCamera();
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const model = handPoseDetection.SupportedModels.MediaPipeHands;
+    const detector = await handPoseDetection.createDetector(model, {
+      runtime: "mediapipe",
+      modelType: "full",
+      solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands"
+    });
+
+    async function render() {
+      if (video.videoWidth && video.videoHeight) {
+        resizeElements(video, canvas);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const hands = await detector.estimateHands(video, { flipHorizontal: false });
+
+        hands.forEach(hand => {
+          const bendScore = estimateBendScore(hand); // 0 ~ 20
+
+          // 获取任意一个关键点位置作为文字位置（比如手腕点）
+          const ref = hand.keypoints[0];
+
+          // 显示分数
+          ctx.fillStyle = "white";
+          ctx.font = "36px sans-serif";
+          ctx.fillText(`弯曲值: ${bendScore}`, ref.x + 10, ref.y - 10);
+
+          // 可选：绘制关键点
+          ctx.fillStyle = "red";
+          hand.keypoints.forEach(pt => {
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        });
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    render();
+  }
+
+  initialize();
+</script>
+
 </body>
 </html>
