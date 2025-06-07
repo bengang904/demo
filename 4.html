@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>手掌弯曲度检测</title>
+  <title>手掌弯曲检测</title>
   <style>
     html, body {
       margin: 0;
@@ -40,6 +40,28 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
 
 <script>
+  // 防止屏幕熄灭
+  let wakeLock = null;
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log('屏幕保持常亮');
+        wakeLock.addEventListener('release', () => {
+          console.log('屏幕唤醒锁已释放');
+        });
+      }
+    } catch (err) {
+      console.error('无法请求唤醒锁:', err);
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      requestWakeLock(); // 页面重新可见时尝试重新请求
+    }
+  });
+
   function isMobileDevice() {
     return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   }
@@ -101,6 +123,7 @@
   }
 
   async function initialize() {
+    await requestWakeLock(); // 初始化时请求唤醒锁
     const video = await setupCamera();
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
