@@ -2,45 +2,43 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>人脸检测</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>精确人脸检测</title>
   <style>
     * {
-      box-sizing: border-box;
-    }
-
-    html, body {
       margin: 0;
       padding: 0;
-      width: 100%;
-      height: 100%;
+    }
+    body {
       background-color: #000;
       overflow: hidden;
-      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
-
     .video-container {
       position: relative;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      max-width: 700px;
+      /* 高度自动，视频会按比例缩放 */
     }
-
-    #video {
+    video, canvas {
       position: absolute;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
-      object-fit: cover;
-      z-index: 1;
-      background-color: #101010;
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+      max-width: 700px;
     }
-
-    #overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 2;
+    /* 设置容器高度由视频控制 */
+    video {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    canvas {
       pointer-events: none;
     }
   </style>
@@ -52,57 +50,59 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-
   <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('overlay');
     const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
 
-    const modelPromise = Promise.all([
+    Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
       faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
-    ]);
+    ]).then(startVideo);
 
-    window.onload = async () => {
-      const video = document.getElementById('video');
-      const canvas = document.getElementById('overlay');
+    async function startVideo() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (err) {
+        alert("无法访问摄像头：" + err);
+      }
+    }
 
-      async function startVideo() {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-          video.srcObject = stream;
-        } catch (err) {
-          alert('无法访问摄像头：' + err);
-        }
+    video.addEventListener('loadedmetadata', () => {
+      // 计算宽高比例
+      const aspectRatio = video.videoWidth / video.videoHeight;
+      // 设置canvas宽度和高度和video匹配（真实像素）
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // 设置容器高度为video按比例缩放后的高度（css宽度700px时）
+      const container = document.querySelector('.video-container');
+      container.style.height = (700 / aspectRatio) + 'px';
+
+      detectFaces();
+    });
+
+    async function detectFaces() {
+      const displaySize = { width: canvas.width, height: canvas.height };
+      faceapi.matchDimensions(canvas, displaySize);
+
+      async function detectLoop() {
+        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks();
+
+        const resizedDetections = faceapi.resizeResults(detections, displaySize);
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        faceapi.draw.drawDetections(canvas, resizedDetections);
+        faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+
+        requestAnimationFrame(detectLoop);
       }
 
-      await modelPromise;
-      await startVideo();
-
-      video.addEventListener('play', () => {
-        const resizeCanvas = () => {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-        };
-
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-
-        setInterval(async () => {
-          const detections = await faceapi
-            .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-            .withFaceLandmarks();
-
-          const resizedDetections = faceapi.resizeResults(detections, {
-            width: canvas.width,
-            height: canvas.height
-          });
-
-          const ctx = canvas.getContext('2d');
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          faceapi.draw.drawDetections(canvas, resizedDetections);
-          faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-        }, 100);
-      });
-    };
+      detectLoop();
+    }
   </script>
 </body>
 </html>
