@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>WebXR Plane Detection Demo</title>
+  <style>
+    body, html { margin:0; height:100%; overflow:hidden; background:#000; color:#fff; font-family: sans-serif; }
+    #ar-button {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      padding: 12px 24px; background: #2196F3; border:none; border-radius: 6px;
+      font-size: 18px; color: white; cursor: pointer;
+    }
+    #message {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 6px;
+      max-width: 90vw; text-align: center;
+    }
+    canvas {
+      width: 100%; height: 100%; display: block;
+    }
+  </style>
+</head>
+<body>
+
+<button id="ar-button">Start AR with Plane Detection</button>
+<div id="message"></div>
+<canvas id="canvas"></canvas>
+
+<script>
+  const arButton = document.getElementById('ar-button');
+  const message = document.getElementById('message');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  let xrSession = null;
+  let xrReferenceSpace = null;
+  let xrViewerSpace = null;
+
+  function showMessage(msg) {
+    message.textContent = msg;
+  }
+
+  arButton.addEventListener('click', async () => {
+    if (!navigator.xr) {
+      showMessage('WebXR not supported on this browser.');
+      return;
+    }
+
+    try {
+      const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
+      if (!isSupported) {
+        showMessage('Immersive AR not supported on this device.');
+        return;
+      }
+
+      xrSession = await navigator.xr.requestSession('immersive-ar', {
+        requiredFeatures: ['local', 'plane-detection']
+      });
+
+      showMessage('AR session started. Move your camera slowly to detect planes.');
+
+      xrReferenceSpace = await xrSession.requestReferenceSpace('local');
+      xrViewerSpace = await xrSession.requestReferenceSpace('viewer');
+
+      xrSession.addEventListener('end', () => {
+        showMessage('AR session ended.');
+        xrSession = null;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      });
+
+      xrSession.addEventListener('planesdetected', event => {
+        const planes = event.planes;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'lime';
+        ctx.lineWidth = 3;
+
+        planes.forEach(plane => {
+          // polygon是平面顶点的二维数组，每个顶点是[float, float]，以米为单位
+          // 需要转换到屏幕坐标来画，这里用XRView投影
+
+          const polygon = plane.polygon;
+          if (!polygon) return;
+
+          // 获取当前视角
+          xrSession.requestAnimationFrame((time, frame) => {
+            const pose = frame.getViewerPose(xrReferenceSpace);
+            if (!pose) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.beginPath();
+
+            polygon.forEach((point, index) => {
+              const position = new DOMPointReadOnly(point[0], point[1], 0);
+
+              // 将局部平面点转换为视图空间坐标
+              const view = pose.views[0];
+
+              // 这里用XRView的projectionMatrix和transform矩阵来转换三维坐标到屏幕坐标，
+              // 由于点是2D的平面点，这里简化处理为0高度。
+              // 实际项目中你会用Three.js做投影变换，这里仅作示范。
+
+              // 简单转换（不够准确，只为示范）
+              const x = canvas.width / 2 + point[0] * 300; // 放大比例
+              const y = canvas.height / 2 - point[1] * 300;
+
+              if (index === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            });
+            ctx.closePath();
+            ctx.stroke();
+          });
+        });
+      });
+
+      // 开始渲染循环
+      const onXRFrame = (time, frame) => {
+        xrSession.requestAnimationFrame(onXRFrame);
+        // 可以做其他渲染和处理
+      };
+      xrSession.requestAnimationFrame(onXRFrame);
+
+    } catch (e) {
+      showMessage('Failed to start AR session: ' + e.message);
+    }
+  });
+</script>
+
+</body>
+</html>
