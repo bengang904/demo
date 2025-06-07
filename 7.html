@@ -9,11 +9,27 @@
   <style>
     body { margin: 0; }
     canvas { display: block; }
+    #startButton {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 10px 20px;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      font-size: 18px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
+  <!-- 启动按钮 -->
+  <button id="startButton">Start AR</button>
+
   <!-- 使用 A-Frame 初始化 WebXR AR 场景 -->
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+  <a-scene id="scene" embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
     <!-- AR 摄像头 -->
     <a-entity camera></a-entity>
 
@@ -21,31 +37,34 @@
     <a-entity id="grid" position="0 0 0" scale="2 2 2">
       <a-plane color="green" height="10" width="10" rotation="-90 0 0"></a-plane>
     </a-entity>
-    
-    <!-- 可以插入其他元素 -->
   </a-scene>
 
-  <!-- 开始 WebXR 设备 -->
   <script>
-    document.querySelector('a-scene').addEventListener('loaded', () => {
-      const scene = document.querySelector('a-scene');
-      const xr = scene.querySelector('[camera]');
-      // 使用WebXRAPI初始化环境
+    // 获取开始按钮和场景元素
+    const startButton = document.getElementById('startButton');
+    const scene = document.getElementById('scene');
+
+    // 绑定点击事件以启动 AR 会话
+    startButton.addEventListener('click', () => {
+      startButton.style.display = 'none';  // 点击后隐藏按钮
+
+      // 使用WebXR启用AR会话
       navigator.xr.requestSession('immersive-ar', {
         requiredFeatures: ['hit-test'],
         optionalFeatures: ['local', 'plane-detection']
       }).then(session => {
+        // 在会话开始时处理
         session.addEventListener('end', () => {
-          // 当AR会话结束时的处理
+          console.log("AR session ended");
         });
 
-        // 开始会话
+        // 设置参考空间
         const xrReferenceSpace = session.requestReferenceSpace('local');
         const hitTestSource = xr.createHitTestSource({
           space: xrReferenceSpace
         });
 
-        // 定时更新每一帧
+        // 更新每一帧
         function onXRFrame(time, frame) {
           const hitTestResults = frame.getHitTestResults(hitTestSource);
           if (hitTestResults.length > 0) {
@@ -59,7 +78,11 @@
           }
           session.requestAnimationFrame(onXRFrame);
         }
+
+        // 启动动画
         session.requestAnimationFrame(onXRFrame);
+      }).catch(err => {
+        console.error("Failed to start AR session", err);
       });
     });
   </script>
