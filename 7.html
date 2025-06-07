@@ -1,111 +1,91 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Ground Plane Tracker with Camera</title>
-  <script src="https://cdn.jsdelivr.net/npm/aframe@1.2.0/dist/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-ar.js@4.0.0/dist/aframe-ar.js"></script>
+  <title>WebXR AR Demo</title>
   <style>
-    body { margin: 0; }
+    body { margin: 0; overflow: hidden; }
     canvas { display: block; }
-    #startButton {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      padding: 10px 20px;
-      background-color: rgba(0, 0, 0, 0.6);
-      color: white;
-      font-size: 18px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
   </style>
 </head>
-<body style="margin: 0; overflow: hidden;">
-  <!-- 启动按钮 -->
-  <button id="startButton">Start AR</button>
-
-  <!-- 使用 A-Frame 初始化 WebXR AR 场景 -->
-  <a-scene id="scene" embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
-    <!-- AR 摄像头 -->
-    <a-entity camera></a-entity>
-
-    <!-- 地面网格 -->
-    <a-entity id="grid" position="0 0 0" scale="2 2 2">
-      <a-plane color="green" height="10" width="10" rotation="-90 0 0"></a-plane>
-    </a-entity>
-  </a-scene>
-
+<body>
+  <h1>WebXR AR 示例</h1>
+  <button id="start-btn">开始AR</button>
   <script>
-    // 获取开始按钮和场景元素
-    const startButton = document.getElementById('startButton');
-    const scene = document.getElementById('scene');
+    let xrSession = null;
+    let xrReferenceSpace = null;
+    let xrViewerPose = null;
+    let xrFrame = null;
 
-    // 绑定点击事件以启动 AR 会话
-    startButton.addEventListener('click', () => {
-      startButton.style.display = 'none';  // 点击后隐藏按钮
+    const startBtn = document.getElementById('start-btn');
 
-      // 使用WebXR启用AR会话
-      navigator.xr.requestSession('immersive-ar', {
-        requiredFeatures: ['hit-test'],
-        optionalFeatures: ['local', 'plane-detection']
-      }).then(session => {
-        // 在会话开始时处理
-        session.addEventListener('end', () => {
-          console.log("AR session ended");
+    // 检查浏览器是否支持 WebXR
+    if (!navigator.xr) {
+      alert("你的浏览器不支持 WebXR API！");
+    }
+
+    // 开始 AR 会话
+    startBtn.addEventListener('click', async () => {
+      try {
+        // 请求 WebXR AR 会话
+        xrSession = await navigator.xr.requestSession('immersive-ar', {
+          requiredFeatures: ['hit-test']
         });
 
-        // 设置参考空间
-        const xrReferenceSpace = session.requestReferenceSpace('local');
-        const hitTestSource = xr.createHitTestSource({
-          space: xrReferenceSpace
-        });
+        xrSession.addEventListener('end', onSessionEnd);
 
-        // 获取摄像头权限
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-          .then((stream) => {
-            // 在获取到摄像头权限后，初始化WebXR并启动
-            const videoElement = document.createElement('video');
-            videoElement.srcObject = stream;
-            videoElement.play();
+        const canvas = document.createElement('canvas');
+        document.body.appendChild(canvas);
 
-            // 创建视频纹理
-            const texture = new THREE.VideoTexture(videoElement);
-            texture.minFilter = THREE.LinearFilter;
-            texture.magFilter = THREE.LinearFilter;
-            texture.format = THREE.RGBFormat;
+        // 创建一个 WebXR 渲染目标
+        const gl = canvas.getContext('webgl', { xrCompatible: true });
+        const xrLayer = new XRWebGLLayer(xrSession, gl);
+        xrSession.updateRenderState({ baseLayer: xrLayer });
 
-            // 将视频作为摄像头的纹理来显示
-            const cameraEntity = document.querySelector('a-entity[camera]');
-            cameraEntity.setAttribute('material', 'src: ' + texture);
+        // 获取XR参考空间
+        xrReferenceSpace = await xrSession.requestReferenceSpace('local');
 
-            // 更新每一帧
-            function onXRFrame(time, frame) {
-              const hitTestResults = frame.getHitTestResults(hitTestSource);
-              if (hitTestResults.length > 0) {
-                const hitPose = hitTestResults[0].getPose(xrReferenceSpace);
-                if (hitPose) {
-                  // 获取检测到的平面并更新网格位置
-                  const position = hitPose.transform.position;
-                  const gridEntity = document.querySelector('#grid');
-                  gridEntity.setAttribute('position', position);
-                }
-              }
-              session.requestAnimationFrame(onXRFrame);
-            }
+        // 开始渲染循环
+        xrSession.requestAnimationFrame(onXRFrame);
+        await xrSession.start();
 
-            // 启动动画
-            session.requestAnimationFrame(onXRFrame);
-          }).catch((err) => {
-            console.error("Failed to access camera", err);
-          });
-      }).catch(err => {
-        console.error("Failed to start AR session", err);
-      });
+      } catch (error) {
+        console.error('AR会话启动失败:', error);
+      }
     });
+
+    // AR 渲染回调
+    function onXRFrame(t, frame) {
+      xrFrame = frame;
+      const session = frame.session;
+      const viewerPose = frame.getViewerPose(xrReferenceSpace);
+
+      if (viewerPose) {
+        xrViewerPose = viewerPose;
+        renderScene();
+      }
+
+      session.requestAnimationFrame(onXRFrame);
+    }
+
+    // 渲染场景
+    function renderScene() {
+      const gl = xrFrame.session.baseLayer.context;
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+      if (xrViewerPose) {
+        // 这里可以插入AR物体渲染代码，如渲染一个3D模型等
+      }
+    }
+
+    // 会话结束时的回调
+    function onSessionEnd() {
+      xrSession = null;
+      alert('AR会话已结束');
+    }
+
   </script>
 </body>
 </html>
