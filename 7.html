@@ -4,47 +4,59 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BBC 中文繁體 RSS 顯示範例</title>
-  <!-- RSS 提示（僅用於標記，無實際抓取功能） -->
-  <link
-    rel="alternate"
-    type="application/rss+xml"
-    title="BBC 中文繁體"
-    href="https://feeds.bbci.co.uk/zhongwen/trad/rss.xml"
-  />
+  <title>BBC RSS</title>
   <style>
     body {
       font-family: "Noto Sans", sans-serif;
-      max-width: 600px;
+      max-width: 800px;
       margin: 2em auto;
       line-height: 1.6;
       padding: 0 1em;
     }
     h1 {
       text-align: center;
-      margin-bottom: 1em;
+      margin-bottom: 1.5em;
     }
     #rss-list {
       list-style: none;
       padding: 0;
     }
     #rss-list li {
-      margin-bottom: 1em;
+      display: flex;
+      margin-bottom: 1.5em;
       border-bottom: 1px solid #ddd;
-      padding-bottom: 0.5em;
+      padding-bottom: 1em;
     }
-    #rss-list a {
+    .thumb {
+      flex: 0 0 120px;
+      margin-right: 1em;
+    }
+    .thumb img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 4px;
+    }
+    .content {
+      flex: 1;
+    }
+    .content a.title {
       text-decoration: none;
       color: #0055a5;
-      font-size: 1.1em;
+      font-size: 1.2em;
+      font-weight: bold;
     }
-    #rss-list a:hover {
+    .content a.title:hover {
       text-decoration: underline;
     }
     .pubdate {
       display: block;
       color: #666;
-      font-size: 0.9em;
+      font-size: 0.85em;
+      margin: 0.3em 0;
+    }
+    .description {
+      color: #333;
     }
     .error {
       color: red;
@@ -57,62 +69,69 @@
   <ul id="rss-list">
     <li>載入中…</li>
   </ul>
+
   <script>
-    /**
-     * 使用 AllOrigins 公共 CORS 代理來抓取 RSS
-     */
-    const PROXY = "https://api.allorigins.win/raw?url=";
-    const RSS_URL = "https://feeds.bbci.co.uk/zhongwen/trad/rss.xml";
+    // 公共 CORS 代理與 RSS 源
+    const PROXY   = 'https://api.allorigins.win/raw?url=';
+    const RSS_URL = 'https://feeds.bbci.co.uk/zhongwen/trad/rss.xml';
 
-    async function loadRSS(proxyUrl, rssUrl) {
-      const container = document.getElementById("rss-list");
+    async function loadRSS() {
+      const container = document.getElementById('rss-list');
       try {
-        const response = await fetch(proxyUrl + encodeURIComponent(rssUrl));
-        if (!response.ok) throw new Error("HTTP " + response.status);
-        const xmlText = await response.text();
-        const xmlDoc = new DOMParser().parseFromString(xmlText, "application/xml");
-        const items = xmlDoc.querySelectorAll("item");
-
-        // 清空初始訊息
-        container.innerHTML = "";
-
-        items.forEach((item) => {
-          const titleEl = item.querySelector("title");
-          const linkEl = item.querySelector("link");
-          const pubDateEl = item.querySelector("pubDate");
-
-          const title = titleEl ? titleEl.textContent : "(無標題)";
-          const link = linkEl ? linkEl.textContent : "#";
-          const pubDate = pubDateEl
-            ? new Date(pubDateEl.textContent).toLocaleString("zh-TW", {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "";
-
-          const li = document.createElement("li");
-          li.innerHTML = `
-            <a href="${link}" target="_blank" rel="noopener">${title}</a>
-            ${pubDate ? `<span class="pubdate">${pubDate}</span>` : ""}
-          `;
-          container.appendChild(li);
-        });
+        const resp = await fetch(PROXY + encodeURIComponent(RSS_URL));
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const xmlText = await resp.text();
+        const xml = new DOMParser().parseFromString(xmlText, 'application/xml');
+        const items = xml.querySelectorAll('item');
+        container.innerHTML = '';
 
         if (items.length === 0) {
           container.innerHTML = '<li class="error">目前沒有可顯示的新聞項目。</li>';
+          return;
         }
+
+        items.forEach(item => {
+          const titleEl     = item.querySelector('title');
+          const linkEl      = item.querySelector('link');
+          const descEl      = item.querySelector('description');
+          const pubDateEl   = item.querySelector('pubDate');
+          const thumbEl     = item.querySelector('media\\:thumbnail, thumbnail');
+
+          const title   = titleEl? titleEl.textContent.trim() : '(無標題)';
+          const link    = linkEl? linkEl.textContent.trim() : '#';
+          const desc    = descEl? descEl.textContent.trim() : '';
+          const dateStr = pubDateEl
+            ? new Date(pubDateEl.textContent).toLocaleString('zh-TW', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit'
+              })
+            : '';
+          const thumbUrl = thumbEl? thumbEl.getAttribute('url') : null;
+
+          const li = document.createElement('li');
+          li.innerHTML = `
+            ${thumbUrl
+              ? `<div class="thumb"><a href="${link}" target="_blank" rel="noopener">
+                   <img src="${thumbUrl}" alt="縮圖">
+                 </a></div>`
+              : `<div class="thumb"></div>`
+            }
+            <div class="content">
+              <a class="title" href="${link}" target="_blank" rel="noopener">${title}</a>
+              ${dateStr? `<span class="pubdate">${dateStr}</span>` : ''}
+              ${desc? `<p class="description">${desc}</p>` : ''}
+            </div>
+          `;
+          container.appendChild(li);
+        });
       } catch (err) {
-        container.innerHTML =
-          '<li class="error">RSS 載入失敗，請稍後再試。</li>';
-        console.error("載入 RSS 時發生錯誤：", err);
+        console.error('RSS 載入錯誤：', err);
+        container.innerHTML = '<li class="error">RSS 載入失敗，請稍後再試。</li>';
       }
     }
 
-    // 啟動抓取
-    loadRSS(PROXY, RSS_URL);
+    // 啟動
+    loadRSS();
   </script>
 </body>
 </html>
