@@ -1,50 +1,118 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>BBC 中文繁體 RSS 範例</title>
-  <!-- 提示瀏覽器／聚合器這是 RSS 源 -->
-  <link rel="alternate" 
-        type="application/rss+xml" 
-        title="BBC 中文繁體" 
-        href="https://feeds.bbci.co.uk/zhongwen/trad/rss.xml">
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BBC 中文繁體 RSS 顯示範例</title>
+  <!-- RSS 提示（僅用於標記，無實際抓取功能） -->
+  <link
+    rel="alternate"
+    type="application/rss+xml"
+    title="BBC 中文繁體"
+    href="https://feeds.bbci.co.uk/zhongwen/trad/rss.xml"
+  />
   <style>
-    body { font-family: sans-serif; padding: 1em; }
-    #rss-list { list-style: none; padding: 0; }
-    #rss-list li { margin-bottom: .8em; }
-    #rss-list a { text-decoration: none; color: #0055a5; }
+    body {
+      font-family: "Noto Sans", sans-serif;
+      max-width: 600px;
+      margin: 2em auto;
+      line-height: 1.6;
+      padding: 0 1em;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1em;
+    }
+    #rss-list {
+      list-style: none;
+      padding: 0;
+    }
+    #rss-list li {
+      margin-bottom: 1em;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.5em;
+    }
+    #rss-list a {
+      text-decoration: none;
+      color: #0055a5;
+      font-size: 1.1em;
+    }
+    #rss-list a:hover {
+      text-decoration: underline;
+    }
+    .pubdate {
+      display: block;
+      color: #666;
+      font-size: 0.9em;
+    }
+    .error {
+      color: red;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
   <h1>BBC 中文繁體 最新新聞</h1>
-  <ul id="rss-list">載入中…</ul>
-
+  <ul id="rss-list">
+    <li>載入中…</li>
+  </ul>
   <script>
-  async function loadRSS(url) {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const xmlText = await res.text();
-      const xmlDoc  = new DOMParser().parseFromString(xmlText, "application/xml");
-      const items   = xmlDoc.querySelectorAll("item");
-      const ul      = document.getElementById("rss-list");
-      ul.innerHTML = "";  // 清空「載入中」
+    /**
+     * 使用 AllOrigins 公共 CORS 代理來抓取 RSS
+     */
+    const PROXY = "https://api.allorigins.win/raw?url=";
+    const RSS_URL = "https://feeds.bbci.co.uk/zhongwen/trad/rss.xml";
 
-      items.forEach(item => {
-        const title = item.querySelector("title")?.textContent || "(無標題)";
-        const link  = item.querySelector("link")?.textContent  || "#";
-        const li    = document.createElement("li");
-        li.innerHTML = `<a href="${link}" target="_blank">${title}</a>`;
-        ul.appendChild(li);
-      });
-    } catch (err) {
-      document.getElementById("rss-list").textContent = "RSS 載入失敗，請稍後再試。";
-      console.error(err);
+    async function loadRSS(proxyUrl, rssUrl) {
+      const container = document.getElementById("rss-list");
+      try {
+        const response = await fetch(proxyUrl + encodeURIComponent(rssUrl));
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const xmlText = await response.text();
+        const xmlDoc = new DOMParser().parseFromString(xmlText, "application/xml");
+        const items = xmlDoc.querySelectorAll("item");
+
+        // 清空初始訊息
+        container.innerHTML = "";
+
+        items.forEach((item) => {
+          const titleEl = item.querySelector("title");
+          const linkEl = item.querySelector("link");
+          const pubDateEl = item.querySelector("pubDate");
+
+          const title = titleEl ? titleEl.textContent : "(無標題)";
+          const link = linkEl ? linkEl.textContent : "#";
+          const pubDate = pubDateEl
+            ? new Date(pubDateEl.textContent).toLocaleString("zh-TW", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "";
+
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <a href="${link}" target="_blank" rel="noopener">${title}</a>
+            ${pubDate ? `<span class="pubdate">${pubDate}</span>` : ""}
+          `;
+          container.appendChild(li);
+        });
+
+        if (items.length === 0) {
+          container.innerHTML = '<li class="error">目前沒有可顯示的新聞項目。</li>';
+        }
+      } catch (err) {
+        container.innerHTML =
+          '<li class="error">RSS 載入失敗，請稍後再試。</li>';
+        console.error("載入 RSS 時發生錯誤：", err);
+      }
     }
-  }
 
-  // 用 BBC 中文繁體 RSS
-  loadRSS("https://feeds.bbci.co.uk/zhongwen/trad/rss.xml");
+    // 啟動抓取
+    loadRSS(PROXY, RSS_URL);
   </script>
 </body>
 </html>
