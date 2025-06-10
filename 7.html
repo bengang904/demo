@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>KaiOS 相机调用</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: black;
+      color: white;
+      text-align: center;
+    }
+    video {
+      width: 100%;
+      height: auto;
+      margin-top: 10px;
+    }
+    button {
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>调用相机</h1>
+  <button onclick="startCamera()">启动摄像头</button>
+  <video id="video" autoplay playsinline></video>
+
+  <script>
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const videoElement = document.getElementById('video');
+        videoElement.srcObject = stream;
+      } catch (err) {
+        alert('无法访问摄像头: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
