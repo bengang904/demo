@@ -2,38 +2,127 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>触觉反馈示例</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>莫尔斯码触觉反馈</title>
   <style>
     body {
-      font-family: sans-serif;
-      text-align: center;
-      padding-top: 100px;
+      font-family: "Helvetica Neue", sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
     }
+
+    h1 {
+      font-size: 2em;
+      color: #333;
+    }
+
+    input {
+      padding: 10px;
+      font-size: 1em;
+      margin: 10px 0;
+      width: 100%;
+      max-width: 300px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
     button {
-      font-size: 20px;
-      padding: 10px 20px;
-      border-radius: 10px;
-      border: none;
+      padding: 12px 30px;
+      font-size: 1.1em;
       background-color: #4CAF50;
       color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-size: 1em;
+      color: #333;
     }
   </style>
 </head>
 <body>
 
-  <h1>触觉反馈按钮</h1>
-  <p>点击下面按钮体验手机震动（仅限 Android）</p>
+  <h1>莫尔斯码震动</h1>
+  <p>输入英文文本，用震动感受莫尔斯码（Android 支持）</p>
 
-  <button onclick="triggerVibration()">点击震动</button>
+  <input type="text" id="textInput" placeholder="例如: SOS 或 HELLO 123" />
+  <button onclick="vibrateMorse()">开始震动</button>
+  <div id="status"></div>
 
   <script>
-    function triggerVibration() {
-      if ('vibrate' in navigator) {
-        // 震动模式：震动200ms，暂停100ms，再震动300ms
-        navigator.vibrate([200, 100, 300]);
-      } else {
-        alert('你的设备或浏览器不支持震动功能。');
+    const morseCodeMap = {
+      A: ".-",     B: "-...",   C: "-.-.",   D: "-..",
+      E: ".",      F: "..-.",   G: "--.",    H: "....",
+      I: "..",     J: ".---",   K: "-.-",    L: ".-..",
+      M: "--",     N: "-.",     O: "---",    P: ".--.",
+      Q: "--.-",   R: ".-.",    S: "...",    T: "-",
+      U: "..-",    V: "...-",   W: ".--",    X: "-..-",
+      Y: "-.--",   Z: "--..",
+      0: "-----",  1: ".----",  2: "..---",  3: "...--",
+      4: "....-",  5: ".....",  6: "-....",  7: "--...",
+      8: "---..",  9: "----."
+    };
+
+    function textToMorse(text) {
+      return text.toUpperCase().split("").map(char => {
+        if (morseCodeMap[char]) return morseCodeMap[char];
+        if (char === " ") return " ";
+        return "";
+      }).join(" ");
+    }
+
+    function morseToVibrationPattern(morseCode) {
+      const unit = 100; // 1单位 = 100ms
+      const pattern = [];
+
+      for (let char of morseCode) {
+        if (char === ".") {
+          pattern.push(unit);       // 点：1单位震动
+        } else if (char === "-") {
+          pattern.push(unit * 3);   // 划：3单位震动
+        } else if (char === " ") {
+          pattern.push(0); // 空格（间隔）
+        }
+
+        // 每个点/划后停顿 1 单位
+        pattern.push(unit);
       }
+
+      return pattern;
+    }
+
+    function vibrateMorse() {
+      const input = document.getElementById("textInput").value.trim();
+      const status = document.getElementById("status");
+
+      if (!input) {
+        status.textContent = "请输入一些文字。";
+        return;
+      }
+
+      if (!('vibrate' in navigator)) {
+        status.textContent = "设备不支持震动功能。";
+        return;
+      }
+
+      const morse = textToMorse(input);
+      const pattern = morseToVibrationPattern(morse);
+      navigator.vibrate(pattern);
+      status.textContent = `发送莫尔斯码：${morse}`;
     }
   </script>
 
