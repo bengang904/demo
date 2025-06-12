@@ -52,7 +52,7 @@
     }
 
     button:hover {
-      background-color: #45a049;
+      background-color: #070707;
     }
 
     #status {
@@ -62,17 +62,22 @@
       text-align: center;
       max-width: 90%;
     }
+
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
   <p>仅支持英文、数字与空格</p>
-  <input type="text" id="textInput" placeholder="例如: Hello 123" value="HELLO 123" />
+  <input type="text" id="textInput" placeholder="例如: Hello 123" value="HELLO" />
+
   <div class="options">
     <label><input type="radio" name="mode" value="flash" checked> 仅闪光灯</label>
     <label><input type="radio" name="mode" value="vibrate"> 仅震动</label>
   </div>
 
-  <button onclick="sendMorse()">开始发送</button>
+  <button id="sendButton" onclick="sendMorse()">开始发送</button>
   <div id="status">等待输入…</div>
 
   <script>
@@ -86,15 +91,23 @@
       5: ".....", 6: "-....", 7: "--...", 8: "---..", 9: "----."
     };
 
-    let stream, track;
+    let stream = null;
+    let track = null;
+    let lastMode = null;
 
     async function initTorch() {
-      if (!stream) {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { exact: "environment" } }
-        });
-        track = stream.getVideoTracks()[0];
+      if (stream) {
+        // 清除旧资源（防止切换模式卡住）
+        track.stop();
+        stream = null;
+        track = null;
       }
+
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: "environment" } }
+      });
+
+      track = stream.getVideoTracks()[0];
 
       const caps = track.getCapabilities();
       if (!caps.torch) throw new Error("设备不支持手电筒控制");
@@ -137,10 +150,10 @@
     }
 
     async function sendMorse() {
+      const sendBtn = document.getElementById("sendButton");
       const rawInput = document.getElementById("textInput").value;
       const status = document.getElementById("status");
       const mode = document.querySelector('input[name="mode"]:checked').value;
-
       const input = cleanText(rawInput);
 
       if (!input) {
@@ -153,8 +166,21 @@
         return;
       }
 
+      // 显示状态并隐藏按钮
+      sendBtn.classList.add("hidden");
+      status.textContent = "准备中…";
+
       try {
-        if (mode === "flash") await initTorch();
+        if (mode === "flash") {
+          await initTorch();
+        } else if (lastMode === "flash" && track) {
+          // 如果前一次是闪光，清理资源
+          track.stop();
+          track = null;
+          stream = null;
+        }
+
+        lastMode = mode;
 
         const morse = textToMorse(input);
         const steps = morseToSteps(morse);
@@ -171,15 +197,16 @@
           await new Promise(res => setTimeout(res, step.duration));
         }
 
-        if (mode === "flash") {
+        if (mode === "flash" && track) {
           await track.applyConstraints({ advanced: [{ torch: false }] });
         }
 
         status.textContent = "✅ 发送完成";
-
       } catch (err) {
         console.error(err);
         status.textContent = "❌ 错误：" + err.message;
+      } finally {
+        sendBtn.classList.remove("hidden");
       }
     }
 
@@ -187,6 +214,5 @@
       if (track) track.stop();
     };
   </script>
-
 </body>
 </html>
