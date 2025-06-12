@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>莫尔斯码</title>
+  <title>莫尔斯码发送器</title>
   <style>
     body {
       font-family: "Helvetica Neue", sans-serif;
@@ -105,19 +105,13 @@
         track = null;
       }
 
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { exact: "environment" } }
-        });
-        track = stream.getVideoTracks()[0];
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: "environment" } }
+      });
+      track = stream.getVideoTracks()[0];
 
-        const caps = track.getCapabilities();
-        if (!caps.torch) {
-          throw new Error("设备不支持手电筒控制");
-        }
-      } catch (err) {
-        throw new Error("🚫 无法访问摄像头。请授予摄像头权限，并确保设备有后置相机。");
-      }
+      const caps = track.getCapabilities();
+      if (!caps.torch) throw new Error("设备不支持手电筒控制");
     }
 
     function cleanText(text) {
@@ -178,11 +172,15 @@
 
       try {
         if (mode === "flash") {
-          await initTorch();
+          try {
+            await initTorch();
+          } catch (err) {
+            throw new Error("🚫 无法访问摄像头权限，请在浏览器设置中启用相机权限，并刷新页面。");
+          }
         } else if (lastMode === "flash" && track) {
           track.stop();
-          track = null;
           stream = null;
+          track = null;
         }
 
         lastMode = mode;
