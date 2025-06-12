@@ -1,23 +1,33 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>莫尔斯码：灯光 + 震动</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>莫尔斯码触觉反馈</title>
   <style>
     body {
       font-family: "Helvetica Neue", sans-serif;
-      background-color: #f0f0f0;
-      text-align: center;
-      padding: 60px 20px;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 2em;
+      color: #333;
     }
 
     input {
       padding: 10px;
       font-size: 1em;
-      width: 80%;
-      max-width: 300px;
       margin: 10px 0;
+      width: 100%;
+      max-width: 300px;
       border-radius: 6px;
       border: 1px solid #ccc;
     }
@@ -25,11 +35,12 @@
     button {
       padding: 12px 30px;
       font-size: 1.1em;
-      border: none;
-      border-radius: 10px;
       background-color: #4CAF50;
       color: white;
+      border: none;
+      border-radius: 10px;
       cursor: pointer;
+      transition: background-color 0.2s;
     }
 
     button:hover {
@@ -37,74 +48,33 @@
     }
 
     #status {
-      margin-top: 20px;
+      margin-top: 15px;
       font-size: 1em;
       color: #333;
-    }
-
-    .warning {
-      color: red;
-      font-size: 0.95em;
-      margin-top: 5px;
     }
   </style>
 </head>
 <body>
 
-  <h1>莫尔斯码手电筒 + 震动</h1>
-  <p>输入英文或数字，将通过灯光与震动发送</p>
+  <h1>莫尔斯码震动 + 闪光</h1>
+  <p>输入英文文本，使用震动和闪光灯发送（Android 支持）</p>
 
-  <div class="warning">⚠️ 请确保允许摄像头权限 + 打开震动模式（仅安卓有效）</div>
-
-  <input type="text" id="textInput" placeholder="例如：SOS / HELLO 123" />
-  <br>
+  <input type="text" id="textInput" placeholder="例如: SOS 或 HELLO 123" />
   <button onclick="sendMorse()">开始发送</button>
   <div id="status">等待输入…</div>
 
   <script>
-    const morseMap = {
-      A: ".-", B: "-...", C: "-.-.", D: "-..", E: ".",
-      F: "..-.", G: "--.", H: "....", I: "..", J: ".---",
-      K: "-.-", L: ".-..", M: "--", N: "-.", O: "---",
-      P: ".--.", Q: "--.-", R: ".-.", S: "...", T: "-",
-      U: "..-", V: "...-", W: ".--", X: "-..-", Y: "-.--", Z: "--..",
-      0: "-----", 1: ".----", 2: "..---", 3: "...--",
-      4: "....-", 5: ".....", 6: "-....", 7: "--...",
-      8: "---..", 9: "----."
+    const morseCodeMap = {
+      A: ".-", B: "-...", C: "-.-.", D: "-..", E: ".", F: "..-.",
+      G: "--.", H: "....", I: "..", J: ".---", K: "-.-", L: ".-..",
+      M: "--", N: "-.", O: "---", P: ".--.", Q: "--.-", R: ".-.",
+      S: "...", T: "-", U: "..-", V: "...-", W: ".--", X: "-..-",
+      Y: "-.--", Z: "--..",
+      0: "-----", 1: ".----", 2: "..---", 3: "...--", 4: "....-",
+      5: ".....", 6: "-....", 7: "--...", 8: "---..", 9: "----."
     };
 
     let stream, track;
-
-    function textToMorse(text) {
-      return text.toUpperCase().split("").map(ch => {
-        if (morseMap[ch]) return morseMap[ch];
-        if (ch === " ") return " ";
-        return "";
-      }).join(" ");
-    }
-
-    function morseToSteps(morse) {
-      const unit = 100;
-      const steps = [];
-
-      for (let i = 0; i < morse.length; i++) {
-        const ch = morse[i];
-
-        if (ch === ".") {
-          steps.push({ on: true, duration: unit });
-        } else if (ch === "-") {
-          steps.push({ on: true, duration: unit * 3 });
-        } else if (ch === " ") {
-          steps.push({ on: false, duration: unit * 7 }); // word gap
-          continue;
-        }
-
-        if (i < morse.length - 1) {
-          steps.push({ on: false, duration: unit }); // intra-letter gap
-        }
-      }
-      return steps;
-    }
 
     async function initTorch() {
       if (!stream) {
@@ -115,7 +85,39 @@
       }
 
       const caps = track.getCapabilities();
-      if (!caps.torch) throw new Error("此设备不支持 torch 控制");
+      if (!caps.torch) throw new Error("设备不支持手电筒控制");
+    }
+
+    function textToMorse(text) {
+      return text.toUpperCase().split('').map(char => {
+        if (morseCodeMap[char]) return morseCodeMap[char];
+        if (char === ' ') return ' ';
+        return '';
+      }).join(' ');
+    }
+
+    function morseToSteps(morse) {
+      const unit = 100;
+      const steps = [];
+
+      for (let i = 0; i < morse.length; i++) {
+        const char = morse[i];
+
+        if (char === ".") {
+          steps.push({ on: true, duration: unit });
+        } else if (char === "-") {
+          steps.push({ on: true, duration: unit * 3 });
+        } else if (char === " ") {
+          steps.push({ on: false, duration: unit * 7 }); // 单词间隔
+          continue;
+        }
+
+        if (i < morse.length - 1) {
+          steps.push({ on: false, duration: unit }); // 符号间隔
+        }
+      }
+
+      return steps;
     }
 
     async function sendMorse() {
@@ -123,31 +125,29 @@
       const status = document.getElementById("status");
 
       if (!input) {
-        status.textContent = "❌ 请输入要发送的内容。";
+        status.textContent = "请输入一些文字。";
         return;
       }
 
       if (!("vibrate" in navigator)) {
-        status.textContent = "❌ 当前浏览器不支持震动功能。";
+        status.textContent = "设备不支持震动功能。";
         return;
       }
 
       try {
         await initTorch();
-
         const morse = textToMorse(input);
         const steps = morseToSteps(morse);
+
         status.textContent = `正在发送：${morse}`;
 
         for (let step of steps) {
           if (step.on) {
-            // 同时启动震动和 torch
             navigator.vibrate(step.duration);
             await track.applyConstraints({ advanced: [{ torch: true }] });
           } else {
             await track.applyConstraints({ advanced: [{ torch: false }] });
           }
-
           await new Promise(res => setTimeout(res, step.duration));
         }
 
@@ -156,7 +156,7 @@
 
       } catch (err) {
         console.error(err);
-        status.textContent = "❌ 出错：" + err.message;
+        status.textContent = "❌ 错误：" + err.message;
       }
     }
 
