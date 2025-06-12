@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>莫尔斯码发送器</title>
+  <title>莫尔斯码</title>
   <style>
     body {
       font-family: "Helvetica Neue", sans-serif;
@@ -69,7 +69,10 @@
   </style>
 </head>
 <body>
+
+  <h1>莫尔斯码发送器</h1>
   <p>仅支持英文、数字与空格</p>
+
   <input type="text" id="textInput" placeholder="例如: Hello 123" value="HELLO" />
 
   <div class="options">
@@ -96,21 +99,25 @@
     let lastMode = null;
 
     async function initTorch() {
-      if (stream) {
-        // 清除旧资源（防止切换模式卡住）
+      if (track) {
         track.stop();
         stream = null;
         track = null;
       }
 
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: "environment" } }
-      });
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { exact: "environment" } }
+        });
+        track = stream.getVideoTracks()[0];
 
-      track = stream.getVideoTracks()[0];
-
-      const caps = track.getCapabilities();
-      if (!caps.torch) throw new Error("设备不支持手电筒控制");
+        const caps = track.getCapabilities();
+        if (!caps.torch) {
+          throw new Error("设备不支持手电筒控制");
+        }
+      } catch (err) {
+        throw new Error("🚫 无法访问摄像头。请授予摄像头权限，并确保设备有后置相机。");
+      }
     }
 
     function cleanText(text) {
@@ -137,12 +144,12 @@
         } else if (char === "-") {
           steps.push({ on: true, duration: unit * 3 });
         } else if (char === " ") {
-          steps.push({ on: false, duration: unit * 7 }); // 单词间隔
+          steps.push({ on: false, duration: unit * 7 });
           continue;
         }
 
         if (i < morse.length - 1) {
-          steps.push({ on: false, duration: unit }); // 符号间隔
+          steps.push({ on: false, duration: unit });
         }
       }
 
@@ -166,7 +173,6 @@
         return;
       }
 
-      // 显示状态并隐藏按钮
       sendBtn.classList.add("hidden");
       status.textContent = "准备中…";
 
@@ -174,7 +180,6 @@
         if (mode === "flash") {
           await initTorch();
         } else if (lastMode === "flash" && track) {
-          // 如果前一次是闪光，清理资源
           track.stop();
           track = null;
           stream = null;
@@ -214,5 +219,6 @@
       if (track) track.stop();
     };
   </script>
+
 </body>
 </html>
