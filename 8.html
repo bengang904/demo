@@ -3,18 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>莫尔斯码触觉反馈</title>
+  <title>手电筒控制</title>
   <style>
     body {
       font-family: "Helvetica Neue", sans-serif;
-      background: #f0f0f0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 20px;
+      background-color: #f4f4f4;
+      text-align: center;
+      padding: 100px 20px;
     }
 
     h1 {
@@ -22,108 +17,72 @@
       color: #333;
     }
 
-    input {
-      padding: 10px;
-      font-size: 1em;
-      margin: 10px 0;
-      width: 100%;
-      max-width: 300px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-
     button {
+      font-size: 1.2em;
       padding: 12px 30px;
-      font-size: 1.1em;
-      background-color: #4CAF50;
-      color: white;
+      margin-top: 20px;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
+      background-color: #007BFF;
+      color: white;
       cursor: pointer;
       transition: background-color 0.2s;
     }
 
     button:hover {
-      background-color: #45a049;
+      background-color: #0056b3;
     }
 
     #status {
-      margin-top: 15px;
-      font-size: 1em;
-      color: #333;
+      margin-top: 20px;
+      color: #555;
     }
   </style>
 </head>
 <body>
 
-  <h1>莫尔斯码震动</h1>
-  <p>输入英文文本，用震动感受莫尔斯码（Android 支持）</p>
+  <h1>手机手电筒控制</h1>
+  <p>点击按钮打开/关闭闪光灯（仅支持部分安卓设备）</p>
 
-  <input type="text" id="textInput" placeholder="例如: SOS 或 HELLO 123" />
-  <button onclick="vibrateMorse()">开始震动</button>
-  <div id="status"></div>
+  <button onclick="toggleFlashlight()">切换手电筒</button>
+  <div id="status">等待操作…</div>
 
   <script>
-    const morseCodeMap = {
-      A: ".-",     B: "-...",   C: "-.-.",   D: "-..",
-      E: ".",      F: "..-.",   G: "--.",    H: "....",
-      I: "..",     J: ".---",   K: "-.-",    L: ".-..",
-      M: "--",     N: "-.",     O: "---",    P: ".--.",
-      Q: "--.-",   R: ".-.",    S: "...",    T: "-",
-      U: "..-",    V: "...-",   W: ".--",    X: "-..-",
-      Y: "-.--",   Z: "--..",
-      0: "-----",  1: ".----",  2: "..---",  3: "...--",
-      4: "....-",  5: ".....",  6: "-....",  7: "--...",
-      8: "---..",  9: "----."
-    };
+    let stream;
+    let torchOn = false;
+    let track;
 
-    function textToMorse(text) {
-      return text.toUpperCase().split("").map(char => {
-        if (morseCodeMap[char]) return morseCodeMap[char];
-        if (char === " ") return " ";
-        return "";
-      }).join(" ");
-    }
+    async function toggleFlashlight() {
+      const status = document.getElementById('status');
 
-    function morseToVibrationPattern(morseCode) {
-      const unit = 100; // 1单位 = 100ms
-      const pattern = [];
-
-      for (let char of morseCode) {
-        if (char === ".") {
-          pattern.push(unit);       // 点：1单位震动
-        } else if (char === "-") {
-          pattern.push(unit * 3);   // 划：3单位震动
-        } else if (char === " ") {
-          pattern.push(0); // 空格（间隔）
+      try {
+        if (!stream) {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          track = stream.getVideoTracks()[0];
         }
 
-        // 每个点/划后停顿 1 单位
-        pattern.push(unit);
-      }
+        const capabilities = track.getCapabilities();
+        if (!capabilities.torch) {
+          status.textContent = "此设备不支持闪光灯控制。";
+          return;
+        }
 
-      return pattern;
+        torchOn = !torchOn;
+        await track.applyConstraints({
+          advanced: [{ torch: torchOn }]
+        });
+
+        status.textContent = torchOn ? "手电筒已开启。" : "手电筒已关闭。";
+
+      } catch (err) {
+        console.error(err);
+        status.textContent = "操作失败：" + err.message;
+      }
     }
 
-    function vibrateMorse() {
-      const input = document.getElementById("textInput").value.trim();
-      const status = document.getElementById("status");
-
-      if (!input) {
-        status.textContent = "请输入一些文字。";
-        return;
-      }
-
-      if (!('vibrate' in navigator)) {
-        status.textContent = "设备不支持震动功能。";
-        return;
-      }
-
-      const morse = textToMorse(input);
-      const pattern = morseToVibrationPattern(morse);
-      navigator.vibrate(pattern);
-      status.textContent = `发送莫尔斯码：${morse}`;
-    }
+    window.onbeforeunload = () => {
+      if (track) track.stop();
+    };
   </script>
 
 </body>
