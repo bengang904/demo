@@ -1,1 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>触觉反馈示例</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding-top: 100px;
+    }
+    button {
+      font-size: 20px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+    }
+  </style>
+</head>
+<body>
 
+  <h1>触觉反馈按钮</h1>
+  <p>点击下面按钮体验手机震动（仅限 Android）</p>
+
+  <button onclick="triggerVibration()">点击震动</button>
+
+  <script>
+    function triggerVibration() {
+      if ('vibrate' in navigator) {
+        // 震动模式：震动200ms，暂停100ms，再震动300ms
+        navigator.vibrate([200, 100, 300]);
+      } else {
+        alert('你的设备或浏览器不支持震动功能。');
+      }
+    }
+  </script>
+
+</body>
+</html>
