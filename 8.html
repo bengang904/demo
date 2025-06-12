@@ -75,7 +75,6 @@
   <div class="options">
     <label><input type="radio" name="mode" value="flash" checked> 仅闪光灯</label>
     <label><input type="radio" name="mode" value="vibrate"> 仅震动</label>
-    <label><input type="radio" name="mode" value="both"> 闪光灯 + 震动</label>
   </div>
 
   <button onclick="sendMorse()">开始发送</button>
@@ -135,7 +134,7 @@
         }
 
         if (i < morse.length - 1) {
-          steps.push({ on: false, duration: unit }); // 字母间隔
+          steps.push({ on: false, duration: unit }); // 符号间隔
         }
       }
 
@@ -154,13 +153,13 @@
         return;
       }
 
-      if (mode !== "flash" && !("vibrate" in navigator)) {
+      if (mode === "vibrate" && !("vibrate" in navigator)) {
         status.textContent = "❌ 当前浏览器不支持震动功能。";
         return;
       }
 
       try {
-        if (mode !== "vibrate") await initTorch();
+        if (mode === "flash") await initTorch();
 
         const morse = textToMorse(input);
         const steps = morseToSteps(morse);
@@ -169,21 +168,15 @@
 
         for (let step of steps) {
           if (step.on) {
-            if (mode === "vibrate" || mode === "both") {
-              navigator.vibrate(step.duration);
-            }
-            if (mode === "flash" || mode === "both") {
-              await track.applyConstraints({ advanced: [{ torch: true }] });
-            }
+            if (mode === "vibrate") navigator.vibrate(step.duration);
+            if (mode === "flash") await track.applyConstraints({ advanced: [{ torch: true }] });
           } else {
-            if (mode === "flash" || mode === "both") {
-              await track.applyConstraints({ advanced: [{ torch: false }] });
-            }
+            if (mode === "flash") await track.applyConstraints({ advanced: [{ torch: false }] });
           }
           await new Promise(res => setTimeout(res, step.duration));
         }
 
-        if (mode === "flash" || mode === "both") {
+        if (mode === "flash") {
           await track.applyConstraints({ advanced: [{ torch: false }] });
         }
 
