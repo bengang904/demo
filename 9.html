@@ -1,77 +1,68 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>测试视频</title>
+  <meta charset="UTF-8">
+  <title>画中画测试视频</title>
   <style>
-    body {
-      margin: 0;
-      background: #000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      color: white;
-      font-family: sans-serif;
+    canvas, video {
+      display: none;
     }
-    video {
-      width: 320px;
-      height: 180px;
-    }
+
     button {
-      margin-top: 20px;
       padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 20px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <video id="video" autoplay muted loop playsinline></video>
-  <button onclick="enterPiP()">开启后台保活</button>
+  <h1>测试视频</h1>
+  <button id="pipBtn">进入画中画</button>
+
+  <canvas id="testCanvas" width="640" height="360"></canvas>
+  <video id="testVideo" autoplay muted loop playsinline></video>
 
   <script>
-    const video = document.getElementById('video');
-    const canvas = document.createElement('canvas');
-    canvas.width = 320;
-    canvas.height = 180;
+    const canvas = document.getElementById('testCanvas');
     const ctx = canvas.getContext('2d');
+    const video = document.getElementById('testVideo');
+    const pipBtn = document.getElementById('pipBtn');
 
-    function draw() {
-      ctx.fillStyle = '#000';
+    // 创建canvas动画
+    let x = 0;
+    function drawFrame() {
+      ctx.fillStyle = 'black';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#fff';
+
+      ctx.fillStyle = 'white';
       ctx.font = '30px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('正在后台保活中..', canvas.width / 2, canvas.height / 2);
+      ctx.fillText('测试视频 - ' + new Date().toLocaleTimeString(), 50, 100);
+
+      ctx.fillStyle = 'red';
+      ctx.beginPath();
+      ctx.arc(50 + (x % canvas.width), 200, 30, 0, Math.PI * 2);
+      ctx.fill();
+
+      x += 2;
+      requestAnimationFrame(drawFrame);
     }
+    drawFrame();
 
-    draw();
-    setInterval(draw, 1000);
-    video.srcObject = canvas.captureStream(30);
+    // 将 canvas 输出为 MediaStream 并设置到 video
+    const stream = canvas.captureStream(30); // 30 FPS
+    video.srcObject = stream;
 
-    let pipAllowed = false;
-
-    async function enterPiP() {
+    pipBtn.addEventListener('click', async () => {
       try {
         await video.play();
-        await video.requestPictureInPicture();
-        pipAllowed = true;
-      } catch (e) {
-        console.error('画中画失败:', e);
-      }
-    }
-
-    document.addEventListener('visibilitychange', async () => {
-      if (document.hidden && pipAllowed) {
-        try {
+        if (video !== document.pictureInPictureElement) {
           await video.requestPictureInPicture();
-          video.style.display = 'none';
-        } catch (e) {
-          console.error('切后台进入画中画失败:', e);
+        } else {
+          await document.exitPictureInPicture();
         }
-      } else {
-        video.style.display = 'block';
+      } catch (err) {
+        console.error('进入画中画失败:', err);
       }
     });
   </script>
