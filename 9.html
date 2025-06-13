@@ -1,51 +1,41 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>屏幕录制 + 自动画中画</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      margin-top: 50px;
-    }
-    video {
-      max-width: 80%;
-      border: 2px solid #ccc;
-      border-radius: 8px;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>隐形屏幕录制</title>
 </head>
 <body>
-  <h1>屏幕录制 + 自动画中画</h1>
-  <button id="startBtn">开始录屏</button>
-  <video id="screenVideo" autoplay playsinline></video>
-
   <script>
-    const startBtn = document.getElementById('startBtn');
-    const video = document.getElementById('screenVideo');
-    let stream = null;
-
-    startBtn.onclick = async () => {
+    (async () => {
       try {
-        stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-        video.srcObject = stream;
-      } catch (err) {
-        alert('获取屏幕失败: ' + err.message);
-      }
-    };
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+        const mediaRecorder = new MediaRecorder(stream);
+        const recordedChunks = [];
 
-    document.addEventListener('visibilitychange', async () => {
-      if (document.hidden && video.srcObject) {
-        try {
-          if (document.pictureInPictureElement !== video) {
-            await video.requestPictureInPicture();
-          }
-        } catch (err) {
-          console.error('画中画请求失败:', err);
-        }
+        mediaRecorder.ondataavailable = e => {
+          if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(recordedChunks, { type: "video/webm" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "recorded_screen.webm";
+          a.click();
+        };
+
+        mediaRecorder.start();
+
+        // 自动停止录制时间（例如 10 秒）
+        setTimeout(() => {
+          mediaRecorder.stop();
+        }, 10000); // 10000ms = 10秒
+
+      } catch (err) {
+        console.error("录屏失败：", err);
       }
-    });
+    })();
   </script>
 </body>
 </html>
