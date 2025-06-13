@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>画中画测试视频</title>
+  <title>小画中画测试视频</title>
   <style>
     canvas, video {
       display: none;
@@ -18,9 +18,9 @@
 </head>
 <body>
   <h1>测试视频</h1>
-  <button id="pipBtn">进入画中画</button>
+  <button id="pipBtn">进入小画中画</button>
 
-  <canvas id="testCanvas" width="340" height="50"></canvas>
+  <canvas id="testCanvas" width="320" height="180"></canvas>
   <video id="testVideo" autoplay muted loop playsinline></video>
 
   <script>
@@ -29,21 +29,19 @@
     const video = document.getElementById('testVideo');
     const pipBtn = document.getElementById('pipBtn');
 
-    // 创建canvas动画（仅绘制时间文本）
     function drawFrame() {
       ctx.fillStyle = 'black';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.fillStyle = 'white';
-      ctx.font = '30px sans-serif';
-      ctx.fillText('上一次成功运行时间 - ' + new Date().toLocaleTimeString(), 50, 180);
+      ctx.font = '16px sans-serif';
+      ctx.fillText('测试视频 - ' + new Date().toLocaleTimeString(), 10, 90);
 
       requestAnimationFrame(drawFrame);
     }
     drawFrame();
 
-    // 将 canvas 输出为 MediaStream 并设置到 video
-    const stream = canvas.captureStream(30); // 30 FPS
+    const stream = canvas.captureStream(30);
     video.srcObject = stream;
 
     pipBtn.addEventListener('click', async () => {
