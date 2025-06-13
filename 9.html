@@ -9,8 +9,8 @@
       background: #000;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       height: 100vh;
       color: white;
       font-family: sans-serif;
@@ -18,80 +18,60 @@
     video {
       width: 320px;
       height: 180px;
-      background: #000;
     }
     button {
       margin-top: 20px;
       padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <video id="testVideo" loop muted autoplay playsinline></video>
-  <button onclick="enablePiP()">启用画中画授权</button>
+  <video id="video" autoplay muted loop playsinline></video>
+  <button onclick="enterPiP()">开启后台保活</button>
 
   <script>
-    const video = document.getElementById('testVideo');
-
-    // 创建 Canvas 生成视频画面
+    const video = document.getElementById('video');
     const canvas = document.createElement('canvas');
     canvas.width = 320;
     canvas.height = 180;
     const ctx = canvas.getContext('2d');
 
-    function drawFrame() {
+    function draw() {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#fff';
       ctx.font = '30px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('测试视频', canvas.width / 2, canvas.height / 2);
+      ctx.fillText('正在后台保活中..', canvas.width / 2, canvas.height / 2);
     }
 
-    // 初始绘制
-    drawFrame();
+    draw();
+    setInterval(draw, 1000);
+    video.srcObject = canvas.captureStream(30);
 
-    // 每秒更新一次画面，模拟1秒循环
-    setInterval(drawFrame, 1000);
+    let pipAllowed = false;
 
-    // 设置视频流为 canvas 生成的流
-    const stream = canvas.captureStream(30);
-    video.srcObject = stream;
-
-    let pipEnabled = false;
-
-    async function enablePiP() {
-      if (!document.pictureInPictureEnabled) {
-        alert('浏览器不支持画中画');
-        return;
-      }
-
+    async function enterPiP() {
       try {
-        // 让视频准备就绪
         await video.play();
-        // 进入画中画（首次授权）
         await video.requestPictureInPicture();
-        pipEnabled = true;
-        console.log('已进入画中画');
-      } catch (err) {
-        console.error('画中画授权失败:', err);
+        pipAllowed = true;
+      } catch (e) {
+        console.error('画中画失败:', e);
       }
     }
 
-    // 页面切换后台时，如果已授权，自动进入 PiP
     document.addEventListener('visibilitychange', async () => {
-      if (document.hidden && pipEnabled) {
+      if (document.hidden && pipAllowed) {
         try {
-          if (document.pictureInPictureElement !== video) {
-            await video.requestPictureInPicture();
-            console.log('后台自动进入画中画');
-          }
-        } catch (err) {
-          console.error('后台进入画中画失败:', err);
+          await video.requestPictureInPicture();
+          video.style.display = 'none';
+        } catch (e) {
+          console.error('切后台进入画中画失败:', e);
         }
+      } else {
+        video.style.display = 'block';
       }
     });
   </script>
