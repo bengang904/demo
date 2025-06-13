@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>文字生成视频播放</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 50px;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      display: block;
+      margin: 20px auto;
+    }
+    textarea {
+      width: 80%;
+      height: 100px;
+    }
+  </style>
+</head>
+<body>
+  <h2>输入文字，生成视频并播放</h2>
+  <textarea id="text" placeholder="输入要播放的文字"></textarea><br>
+  <button onclick="generateVideo()">生成并播放视频</button>
+  <canvas id="canvas" width="640" height="360"></canvas>
+  <video id="video" controls style="display:none; margin-top:20px;"></video>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const videoEl = document.getElementById('video');
+
+    async function generateVideo() {
+      const text = document.getElementById('text').value.trim();
+      if (!text) {
+        alert('请输入内容');
+        return;
+      }
+
+      const stream = canvas.captureStream(30); // 30fps
+      const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+      const chunks = [];
+
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "video/webm" });
+        videoEl.src = URL.createObjectURL(blob);
+        videoEl.style.display = 'block';
+        videoEl.play();
+      };
+
+      let index = 0;
+      let duration = text.length * 200; // 每个字200ms
+      let startTime = Date.now();
+
+      recorder.start();
+
+      // 播放语音（与录制同步）
+      const utter = new SpeechSynthesisUtterance(text);
+      speechSynthesis.speak(utter);
+
+      function drawFrame() {
+        let elapsed = Date.now() - startTime;
+        let charsToShow = Math.floor(elapsed / 200);
+        let content = text.slice(0, charsToShow);
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "black";
+        ctx.font = "28px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(content, canvas.width / 2, canvas.height / 2);
+
+        if (elapsed < duration) {
+          requestAnimationFrame(drawFrame);
+        } else {
+          recorder.stop();
+        }
+      }
+
+      drawFrame();
+    }
+  </script>
+</body>
+</html>
