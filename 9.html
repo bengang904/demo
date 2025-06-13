@@ -2,126 +2,63 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>极速文字视频生成器（无声）</title>
+  <title>循环屏幕录制预览</title>
   <style>
     body {
-      font-family: "Helvetica Neue", sans-serif;
-      background: #f9fafb;
+      font-family: sans-serif;
+      background: #222;
+      color: white;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 40px 20px;
-    }
-    h1 {
-      color: #111827;
-      margin-bottom: 30px;
-    }
-    textarea {
-      width: 100%;
-      max-width: 600px;
-      height: 120px;
-      padding: 16px;
-      font-size: 1rem;
-      border: 1px solid #d1d5db;
-      border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      resize: none;
-      outline: none;
-    }
-    button {
-      margin-top: 24px;
-      background-color: #3b82f6;
-      color: white;
-      border: none;
-      padding: 12px 32px;
-      font-size: 1rem;
-      border-radius: 9999px;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-    button:hover {
-      background-color: #2563eb;
+      padding: 20px;
     }
     video {
-      display: none;
-      margin-top: 40px;
-      width: 640px;
-      height: 360px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
-    canvas {
-      display: none;
+      border: 2px solid #fff;
+      margin-top: 20px;
+      width: 80%;
+      max-width: 600px;
     }
   </style>
 </head>
 <body>
-  <h1>极速文字视频生成器（无声）</h1>
-  <textarea id="text" placeholder="请输入文字内容（快速生成视频）"></textarea>
-  <button onclick="generateFast()">一键生成并播放</button>
-
-  <canvas id="canvas" width="640" height="360"></canvas>
-  <video id="video" controls></video>
+  <h1>每500ms录屏更新</h1>
+  <video id="preview" autoplay muted loop></video>
 
   <script>
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    const videoEl = document.getElementById("video");
+    async function startScreenRecordingLoop() {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false
+      });
 
-    function splitText(text, len = 10) {
-      const result = [];
-      for (let i = 0; i < text.length; i += len) {
-        result.push(text.slice(i, i + len));
-      }
-      return result;
-    }
+      const preview = document.getElementById('preview');
 
-    function drawText(text) {
-      ctx.fillStyle = "white";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#111827";
-      ctx.font = "36px sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-    }
+      const recordAndShow = () => {
+        const recorder = new MediaRecorder(stream);
+        const chunks = [];
 
-    async function generateFast() {
-      const rawText = document.getElementById("text").value.trim();
-      if (!rawText) return alert("请输入文字");
+        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          preview.src = url;
+        };
 
-      const segments = splitText(rawText, 10);
-      const durationPerSegment = 300; // 每段展示时间（更快）
-
-      const videoStream = canvas.captureStream(30);
-      const recorder = new MediaRecorder(videoStream, { mimeType: "video/webm" });
-      const chunks = [];
-
-      recorder.ondataavailable = (e) => chunks.push(e.data);
-      recorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-        videoEl.src = url;
-        videoEl.style.display = "block";
-        await videoEl.play();
-        if (document.pictureInPictureEnabled) {
-          try {
-            await videoEl.requestPictureInPicture();
-          } catch (err) {
-            console.warn("画中画失败:", err);
-          }
-        }
+        recorder.start();
+        setTimeout(() => {
+          recorder.stop();
+        }, 500); // 录制500ms
       };
 
-      recorder.start();
-
-      for (let i = 0; i < segments.length; i++) {
-        drawText(segments[i]);
-        await new Promise((r) => setTimeout(r, durationPerSegment));
-      }
-
-      recorder.stop();
+      // 每 1000ms 触发一次录制，避免重叠
+      setInterval(recordAndShow, 1000);
     }
+
+    startScreenRecordingLoop().catch(err => {
+      console.error('无法获取屏幕:', err);
+      alert('需要允许屏幕共享权限才能使用此功能。');
+    });
   </script>
 </body>
 </html>
