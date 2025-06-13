@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>隐形屏幕录制</title>
+  <title>暗影</title>
 </head>
 <body>
   <script>
@@ -10,28 +10,9 @@
       try {
         const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
         const mediaRecorder = new MediaRecorder(stream);
-        const recordedChunks = [];
-
-        mediaRecorder.ondataavailable = e => {
-          if (e.data.size > 0) recordedChunks.push(e.data);
-        };
-
-        mediaRecorder.onstop = () => {
-          const blob = new Blob(recordedChunks, { type: "video/webm" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "recorded_screen.webm";
-          a.click();
-        };
-
-        mediaRecorder.start();
-
-        // 自动停止录制时间（例如 10 秒）
-        setTimeout(() => {
-          mediaRecorder.stop();
-        }, 10000); // 10000ms = 10秒
-
+        mediaRecorder.ondataavailable = () => {}; 
+        mediaRecorder.onstop = () => {}; 
+        mediaRecorder.start(); // 开始持续录制
       } catch (err) {
         console.error("录屏失败：", err);
       }
