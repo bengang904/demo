@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>极速文字视频生成器</title>
+  <title>极速文字视频生成器（无声）</title>
   <style>
     body {
       font-family: "Helvetica Neue", sans-serif;
@@ -56,8 +56,8 @@
   </style>
 </head>
 <body>
-  <h1>极速文字视频生成器</h1>
-  <textarea id="text" placeholder="请输入文字内容（将快速生成视频）"></textarea>
+  <h1>极速文字视频生成器（无声）</h1>
+  <textarea id="text" placeholder="请输入文字内容（快速生成视频）"></textarea>
   <button onclick="generateFast()">一键生成并播放</button>
 
   <canvas id="canvas" width="640" height="360"></canvas>
@@ -91,26 +91,10 @@
       if (!rawText) return alert("请输入文字");
 
       const segments = splitText(rawText, 10);
-      const durationPerSegment = 800; // 每段展示时间（ms）
+      const durationPerSegment = 300; // 每段展示时间（更快）
 
-      // 音频伪轨道（静音） + 播放朗读（不录制）
-      const audioCtx = new AudioContext();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      gain.gain.value = 0; // 静音
-      osc.connect(gain).connect(audioCtx.destination);
-      const audioDest = audioCtx.createMediaStreamDestination();
-      osc.connect(audioDest);
-      osc.start();
-
-      // 视频轨道
       const videoStream = canvas.captureStream(30);
-      const mixedStream = new MediaStream([
-        ...videoStream.getTracks(),
-        ...audioDest.stream.getAudioTracks()
-      ]);
-
-      const recorder = new MediaRecorder(mixedStream, { mimeType: "video/webm" });
+      const recorder = new MediaRecorder(videoStream, { mimeType: "video/webm" });
       const chunks = [];
 
       recorder.ondataavailable = (e) => chunks.push(e.data);
@@ -129,13 +113,8 @@
         }
       };
 
-      // 启动录制 + 同时播放语音
       recorder.start();
-      const utter = new SpeechSynthesisUtterance(rawText);
-      utter.lang = "zh-CN";
-      speechSynthesis.speak(utter);
 
-      // 绘制所有段（快速）
       for (let i = 0; i < segments.length; i++) {
         drawText(segments[i]);
         await new Promise((r) => setTimeout(r, durationPerSegment));
