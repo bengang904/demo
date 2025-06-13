@@ -2,21 +2,21 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>文字生成视频（画中画）</title>
+  <title>分段文字生成视频（画中画）</title>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
       margin: 50px;
     }
+    textarea {
+      width: 80%;
+      height: 100px;
+    }
     canvas {
       border: 1px solid #ccc;
       display: block;
       margin: 20px auto;
-    }
-    textarea {
-      width: 80%;
-      height: 100px;
     }
     #video {
       display: none;
@@ -27,7 +27,7 @@
   </style>
 </head>
 <body>
-  <h2>输入文字，生成视频并进入画中画</h2>
+  <h2>文字生成视频（每页10字+画中画）</h2>
   <textarea id="text" placeholder="输入要播放的文字"></textarea><br>
   <button onclick="generateVideo()">生成视频并播放</button>
   <button onclick="enterPiP()">进入画中画</button>
@@ -40,82 +40,84 @@
     const ctx = canvas.getContext('2d');
     const videoEl = document.getElementById('video');
 
-    let pipSupported = !!document.pictureInPictureEnabled;
-
     async function generateVideo() {
-      const text = document.getElementById('text').value.trim();
-      if (!text) {
-        alert('请输入内容');
+      const inputText = document.getElementById('text').value.trim();
+      if (!inputText) {
+        alert('请输入文字');
         return;
       }
 
-      const stream = canvas.captureStream(30); // 30fps
-      const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+      // 分段处理，每段最多10个字符
+      const segments = [];
+      for (let i = 0; i < inputText.length; i += 10) {
+        segments.push(inputText.slice(i, i + 10));
+      }
+
+      const stream = canvas.captureStream(30); // 30 fps
+      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
       const chunks = [];
 
-      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.ondataavailable = e => chunks.push(e.data);
       recorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: "video/webm" });
+        const blob = new Blob(chunks, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         videoEl.src = url;
         videoEl.style.display = 'block';
         await videoEl.play();
-
-        // 自动进入画中画
-        if (pipSupported) {
+        if (document.pictureInPictureEnabled) {
           try {
             await videoEl.requestPictureInPicture();
-          } catch (err) {
-            console.warn('自动进入画中画失败：', err);
+          } catch (e) {
+            console.warn('画中画失败:', e);
           }
         }
       };
 
-      // 开始语音和画面录制
       recorder.start();
 
-      const utter = new SpeechSynthesisUtterance(text);
+      // 播放完整语音（可换成每段分开读）
+      const utter = new SpeechSynthesisUtterance(inputText);
       speechSynthesis.speak(utter);
 
-      let startTime = Date.now();
-      let duration = text.length * 200;
+      const delayPerSegment = 1500; // 每段展示时间：1.5 秒
+      let segmentIndex = 0;
 
-      function drawFrame() {
-        let elapsed = Date.now() - startTime;
-        let charsToShow = Math.floor(elapsed / 200);
-        let content = text.slice(0, charsToShow);
-
-        ctx.fillStyle = "white";
+      function drawSegment(text) {
+        ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "black";
-        ctx.font = "28px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(content, canvas.width / 2, canvas.height / 2);
-
-        if (elapsed < duration) {
-          requestAnimationFrame(drawFrame);
-        } else {
-          recorder.stop();
-        }
+        ctx.fillStyle = 'black';
+        ctx.font = '32px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
       }
 
-      drawFrame();
+      function nextSegment() {
+        if (segmentIndex >= segments.length) {
+          recorder.stop();
+          return;
+        }
+        drawSegment(segments[segmentIndex]);
+        segmentIndex++;
+        setTimeout(nextSegment, delayPerSegment);
+      }
+
+      nextSegment();
     }
 
     async function enterPiP() {
       if (!document.pictureInPictureEnabled) {
-        alert('您的浏览器不支持画中画');
+        alert('浏览器不支持画中画');
         return;
       }
-      if (videoEl !== document.pictureInPictureElement) {
-        try {
+      try {
+        if (videoEl !== document.pictureInPictureElement) {
           await videoEl.requestPictureInPicture();
-        } catch (err) {
-          alert('进入画中画失败：' + err.message);
+        } else {
+          await document.exitPictureInPicture();
         }
-      } else {
-        await document.exitPictureInPicture();
+      } catch (err) {
+        console.warn('画中画切换失败:', err);
       }
     }
   </script>
