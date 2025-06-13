@@ -2,35 +2,73 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>点击后持续录屏</title>
+  <title>测试视频</title>
   <style>
-    #startRecording {
-      position: fixed;
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #000;
+    }
+    video {
+      width: 320px;
+      height: 180px;
+      border: 2px solid #fff;
     }
   </style>
 </head>
 <body>
-  <button id="startRecording">开始录屏</button>
+  <video id="testVideo" loop muted autoplay playsinline></video>
 
   <script>
-    document.getElementById("startRecording").addEventListener("click", async () => {
-      try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-        const mediaRecorder = new MediaRecorder(stream);
+    // 创建 1 秒长的视频内容
+    async function createTestVideo() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 360;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#fff';
+      ctx.font = '48px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('测试视频', canvas.width / 2, canvas.height / 2);
 
-        mediaRecorder.ondataavailable = () => {}; // 不处理数据
-        mediaRecorder.onstop = () => {}; // 不处理停止
+      const stream = canvas.captureStream(30); // 30fps
+      const recorder = new MediaRecorder(stream);
+      const chunks = [];
 
-        mediaRecorder.start(); // 持续录制
-      } catch (err) {
-        console.error("录屏失败：", err);
-      }
-    });
+      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.start();
 
-    // 自动模拟点击按钮以启动录屏（前提是浏览器允许）
-    window.addEventListener("load", () => {
-      document.getElementById("startRecording").click();
-    });
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 录制1秒
+      recorder.stop();
+
+      await new Promise(resolve => recorder.onstop = resolve);
+      const blob = new Blob(chunks, { type: 'video/webm' });
+      return URL.createObjectURL(blob);
+    }
+
+    async function init() {
+      const video = document.getElementById('testVideo');
+      const src = await createTestVideo();
+      video.src = src;
+
+      // 监听页面可见性变化
+      document.addEventListener('visibilitychange', async () => {
+        if (document.hidden && document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+          try {
+            await video.requestPictureInPicture();
+          } catch (err) {
+            console.error('无法进入画中画模式：', err);
+          }
+        }
+      });
+    }
+
+    init();
   </script>
 </body>
 </html>
