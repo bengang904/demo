@@ -2,62 +2,49 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>循环屏幕录制预览</title>
+  <title>屏幕录制 + 自动画中画</title>
   <style>
     body {
       font-family: sans-serif;
-      background: #222;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
+      text-align: center;
+      margin-top: 50px;
     }
     video {
-      border: 2px solid #fff;
-      margin-top: 20px;
-      width: 80%;
-      max-width: 600px;
+      max-width: 80%;
+      border: 2px solid #ccc;
+      border-radius: 8px;
     }
   </style>
 </head>
 <body>
-  <h1>每500ms录屏更新</h1>
-  <video id="preview" autoplay muted loop></video>
+  <h1>屏幕录制 + 自动画中画</h1>
+  <button id="startBtn">开始录屏</button>
+  <video id="screenVideo" autoplay playsinline></video>
 
   <script>
-    async function startScreenRecordingLoop() {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false
-      });
+    const startBtn = document.getElementById('startBtn');
+    const video = document.getElementById('screenVideo');
+    let stream = null;
 
-      const preview = document.getElementById('preview');
+    startBtn.onclick = async () => {
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+        video.srcObject = stream;
+      } catch (err) {
+        alert('获取屏幕失败: ' + err.message);
+      }
+    };
 
-      const recordAndShow = () => {
-        const recorder = new MediaRecorder(stream);
-        const chunks = [];
-
-        recorder.ondataavailable = e => chunks.push(e.data);
-        recorder.onstop = () => {
-          const blob = new Blob(chunks, { type: 'video/webm' });
-          const url = URL.createObjectURL(blob);
-          preview.src = url;
-        };
-
-        recorder.start();
-        setTimeout(() => {
-          recorder.stop();
-        }, 500); // 录制500ms
-      };
-
-      // 每 1000ms 触发一次录制，避免重叠
-      setInterval(recordAndShow, 1000);
-    }
-
-    startScreenRecordingLoop().catch(err => {
-      console.error('无法获取屏幕:', err);
-      alert('需要允许屏幕共享权限才能使用此功能。');
+    document.addEventListener('visibilitychange', async () => {
+      if (document.hidden && video.srcObject) {
+        try {
+          if (document.pictureInPictureElement !== video) {
+            await video.requestPictureInPicture();
+          }
+        } catch (err) {
+          console.error('画中画请求失败:', err);
+        }
+      }
     });
   </script>
 </body>
