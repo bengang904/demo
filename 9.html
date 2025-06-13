@@ -1,20 +1,21 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>测试视频</title>
   <style>
     body {
+      margin: 0;
+      background: #000;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      background-color: #000;
     }
     video {
       width: 320px;
       height: 180px;
-      border: 2px solid #fff;
+      background: #000;
     }
   </style>
 </head>
@@ -22,53 +23,44 @@
   <video id="testVideo" loop muted autoplay playsinline></video>
 
   <script>
-    // 创建 1 秒长的视频内容
-    async function createTestVideo() {
-      const canvas = document.createElement('canvas');
-      canvas.width = 640;
-      canvas.height = 360;
-      const ctx = canvas.getContext('2d');
+    // 创建 Canvas 制作“测试视频”画面
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 180;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#fff';
+    ctx.font = '30px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('测试视频', canvas.width / 2, canvas.height / 2);
+
+    // 生成 MediaStream
+    const stream = canvas.captureStream(30); // 30fps
+    const video = document.getElementById('testVideo');
+    video.srcObject = stream;
+
+    // 每秒重绘一次，模拟“1秒视频”
+    setInterval(() => {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#fff';
-      ctx.font = '48px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
       ctx.fillText('测试视频', canvas.width / 2, canvas.height / 2);
+    }, 1000);
 
-      const stream = canvas.captureStream(30); // 30fps
-      const recorder = new MediaRecorder(stream);
-      const chunks = [];
-
-      recorder.ondataavailable = e => chunks.push(e.data);
-      recorder.start();
-
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 录制1秒
-      recorder.stop();
-
-      await new Promise(resolve => recorder.onstop = resolve);
-      const blob = new Blob(chunks, { type: 'video/webm' });
-      return URL.createObjectURL(blob);
-    }
-
-    async function init() {
-      const video = document.getElementById('testVideo');
-      const src = await createTestVideo();
-      video.src = src;
-
-      // 监听页面可见性变化
-      document.addEventListener('visibilitychange', async () => {
-        if (document.hidden && document.pictureInPictureEnabled && !document.pictureInPictureElement) {
-          try {
+    // 标签页隐藏时尝试开启画中画
+    document.addEventListener('visibilitychange', async () => {
+      if (document.hidden) {
+        try {
+          if (document.pictureInPictureEnabled && !video.disablePictureInPicture && !video.pipWindow) {
             await video.requestPictureInPicture();
-          } catch (err) {
-            console.error('无法进入画中画模式：', err);
           }
+        } catch (err) {
+          console.error('画中画模式失败:', err);
         }
-      });
-    }
-
-    init();
+      }
+    });
   </script>
 </body>
 </html>
