@@ -2,35 +2,69 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>分段文字生成视频（画中画）</title>
+  <title>文字视频生成器</title>
   <style>
     body {
-      font-family: sans-serif;
-      text-align: center;
-      margin: 50px;
+      font-family: "Helvetica Neue", sans-serif;
+      background: #f9fafb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
     }
+
+    h1 {
+      color: #111827;
+      margin-bottom: 30px;
+    }
+
     textarea {
-      width: 80%;
-      height: 100px;
+      width: 100%;
+      max-width: 600px;
+      height: 120px;
+      padding: 16px;
+      font-size: 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      resize: none;
+      outline: none;
     }
-    canvas {
-      border: 1px solid #ccc;
-      display: block;
-      margin: 20px auto;
+
+    button {
+      margin-top: 24px;
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 32px;
+      font-size: 1rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: background 0.3s ease;
     }
-    #video {
+
+    button:hover {
+      background-color: #2563eb;
+    }
+
+    video {
       display: none;
+      margin-top: 40px;
       width: 640px;
       height: 360px;
-      margin-top: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    canvas {
+      display: none;
     }
   </style>
 </head>
 <body>
-  <h2>文字生成视频（每页10字+画中画）</h2>
-  <textarea id="text" placeholder="输入要播放的文字"></textarea><br>
-  <button onclick="generateVideo()">生成视频并播放</button>
-  <button onclick="enterPiP()">进入画中画</button>
+  <h1>文字生成视频（画中画）</h1>
+  <textarea id="text" placeholder="请输入要展示的文字，例如诗句、台词、提示语等"></textarea>
+  <button onclick="generateAndPlay()">生成并播放视频</button>
 
   <canvas id="canvas" width="640" height="360"></canvas>
   <video id="video" controls></video>
@@ -40,20 +74,39 @@
     const ctx = canvas.getContext('2d');
     const videoEl = document.getElementById('video');
 
-    async function generateVideo() {
-      const inputText = document.getElementById('text').value.trim();
-      if (!inputText) {
-        alert('请输入文字');
-        return;
+    function splitText(text, len = 10) {
+      const result = [];
+      for (let i = 0; i < text.length; i += len) {
+        result.push(text.slice(i, i + len));
       }
+      return result;
+    }
 
-      // 分段处理，每段最多10个字符
-      const segments = [];
-      for (let i = 0; i < inputText.length; i += 10) {
-        segments.push(inputText.slice(i, i + 10));
-      }
+    function drawText(text) {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#111827';
+      ctx.font = '36px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    }
 
-      const stream = canvas.captureStream(30); // 30 fps
+    function speak(text) {
+      return new Promise(resolve => {
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'zh-CN';
+        utter.onend = resolve;
+        speechSynthesis.speak(utter);
+      });
+    }
+
+    async function generateAndPlay() {
+      const rawText = document.getElementById('text').value.trim();
+      if (!rawText) return alert('请输入内容');
+
+      const segments = splitText(rawText, 10);
+      const stream = canvas.captureStream(30);
       const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
       const chunks = [];
 
@@ -67,58 +120,21 @@
         if (document.pictureInPictureEnabled) {
           try {
             await videoEl.requestPictureInPicture();
-          } catch (e) {
-            console.warn('画中画失败:', e);
+          } catch (err) {
+            console.warn('画中画失败:', err);
           }
         }
       };
 
       recorder.start();
 
-      // 播放完整语音（可换成每段分开读）
-      const utter = new SpeechSynthesisUtterance(inputText);
-      speechSynthesis.speak(utter);
-
-      const delayPerSegment = 1500; // 每段展示时间：1.5 秒
-      let segmentIndex = 0;
-
-      function drawSegment(text) {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'black';
-        ctx.font = '32px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      for (const seg of segments) {
+        drawText(seg);
+        await speak(seg); // 等语音播完
+        await new Promise(r => setTimeout(r, 400)); // 稍作缓冲
       }
 
-      function nextSegment() {
-        if (segmentIndex >= segments.length) {
-          recorder.stop();
-          return;
-        }
-        drawSegment(segments[segmentIndex]);
-        segmentIndex++;
-        setTimeout(nextSegment, delayPerSegment);
-      }
-
-      nextSegment();
-    }
-
-    async function enterPiP() {
-      if (!document.pictureInPictureEnabled) {
-        alert('浏览器不支持画中画');
-        return;
-      }
-      try {
-        if (videoEl !== document.pictureInPictureElement) {
-          await videoEl.requestPictureInPicture();
-        } else {
-          await document.exitPictureInPicture();
-        }
-      } catch (err) {
-        console.warn('画中画切换失败:', err);
-      }
+      recorder.stop();
     }
   </script>
 </body>
