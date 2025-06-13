@@ -15,6 +15,7 @@
       margin: 0;
       padding: 20px;
     }
+
     input[type="text"] {
       padding: 10px;
       font-size: 1em;
@@ -24,13 +25,16 @@
       border-radius: 6px;
       border: 1px solid #ccc;
     }
+
     .options {
       margin: 10px 0;
     }
+
     label {
       margin-right: 10px;
       font-size: 1em;
     }
+
     button {
       padding: 12px 30px;
       font-size: 1.1em;
@@ -41,9 +45,11 @@
       cursor: pointer;
       transition: background-color 0.2s;
     }
+
     button:hover {
       background-color: #070707;
     }
+
     #status {
       margin-top: 15px;
       font-size: 1em;
@@ -51,6 +57,7 @@
       text-align: center;
       max-width: 90%;
     }
+
     .hidden {
       display: none;
     }
@@ -58,19 +65,16 @@
 </head>
 <body>
   <p>仅支持英文、数字与空格</p>
+
   <input type="text" id="textInput" placeholder="例如: Hello 123" value="HELLO" />
+
   <div class="options">
     <label><input type="radio" name="mode" value="flash" checked> 仅闪光灯</label>
     <label><input type="radio" name="mode" value="vibrate"> 仅震动</label>
   </div>
-  <button id="sendButton" onclick="sendMorse()">开始发送</button>
-  <button onclick="enterPiP()">后台运行</button>
-  <div id="status">等待输入…</div>
 
-  <!-- 画中画保活视频（1x1静音） -->
-  <video id="keepAliveVideo" muted autoplay playsinline style="display:none">
-    <source src="data:video/mp4;base64,AAAAHGZ0eXBNNAAAAAAAACGmAAACcG1vb3YAAABsbXZoZAAAAAB8JWoAfCVqAAACAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC21kaWEAAAAgbWRoZAAAAAB8JWoAfCVqAAAAAAAAAAEAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGdHJhawAAABoZHRyYWsAAABodGtoZAAAAHwlah8JWoAAAABAAAAAAAFAAAAAQAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAGbWRpYQAAACBtZGhkAAAAfCVqAHwlah8JWoAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAA" type="video/mp4">
-  </video>
+  <button id="sendButton" onclick="sendMorse()">开始发送</button>
+  <div id="status">等待输入…</div>
 
   <script>
     const morseCodeMap = {
@@ -93,10 +97,12 @@
         stream = null;
         track = null;
       }
+
       stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { exact: "environment" } }
       });
       track = stream.getVideoTracks()[0];
+
       const caps = track.getCapabilities();
       if (!caps.torch) throw new Error("设备不支持手电筒控制");
     }
@@ -116,8 +122,10 @@
     function morseToSteps(morse) {
       const unit = 100;
       const steps = [];
+
       for (let i = 0; i < morse.length; i++) {
         const char = morse[i];
+
         if (char === ".") {
           steps.push({ on: true, duration: unit });
         } else if (char === "-") {
@@ -126,10 +134,12 @@
           steps.push({ on: false, duration: unit * 7 });
           continue;
         }
+
         if (i < morse.length - 1) {
           steps.push({ on: false, duration: unit });
         }
       }
+
       return steps;
     }
 
@@ -167,8 +177,10 @@
         }
 
         lastMode = mode;
+
         const morse = textToMorse(input);
         const steps = morseToSteps(morse);
+
         status.textContent = `正在发送：${morse}`;
 
         for (let step of steps) {
@@ -194,20 +206,10 @@
       }
     }
 
-    async function enterPiP() {
-      const video = document.getElementById("keepAliveVideo");
-      try {
-        await video.requestPictureInPicture();
-        document.getElementById("status").textContent = "🟢 已进入后台保活模式";
-      } catch (err) {
-        console.error("PiP 请求失败", err);
-        alert("⚠️ 无法进入画中画，浏览器可能不支持。");
-      }
-    }
-
     window.onbeforeunload = () => {
       if (track) track.stop();
     };
   </script>
+
 </body>
 </html>
