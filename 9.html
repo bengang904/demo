@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>文字视频生成器</title>
+  <title>极速文字视频生成器</title>
   <style>
     body {
       font-family: "Helvetica Neue", sans-serif;
@@ -12,12 +12,10 @@
       align-items: center;
       padding: 40px 20px;
     }
-
     h1 {
       color: #111827;
       margin-bottom: 30px;
     }
-
     textarea {
       width: 100%;
       max-width: 600px;
@@ -30,7 +28,6 @@
       resize: none;
       outline: none;
     }
-
     button {
       margin-top: 24px;
       background-color: #3b82f6;
@@ -42,11 +39,9 @@
       cursor: pointer;
       transition: background 0.3s ease;
     }
-
     button:hover {
       background-color: #2563eb;
     }
-
     video {
       display: none;
       margin-top: 40px;
@@ -55,24 +50,23 @@
       border-radius: 12px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
-
     canvas {
       display: none;
     }
   </style>
 </head>
 <body>
-  <h1>文字生成视频（画中画）</h1>
-  <textarea id="text" placeholder="请输入要展示的文字，例如诗句、台词、提示语等"></textarea>
-  <button onclick="generateAndPlay()">生成并播放视频</button>
+  <h1>极速文字视频生成器</h1>
+  <textarea id="text" placeholder="请输入文字内容（将快速生成视频）"></textarea>
+  <button onclick="generateFast()">一键生成并播放</button>
 
   <canvas id="canvas" width="640" height="360"></canvas>
   <video id="video" controls></video>
 
   <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const videoEl = document.getElementById('video');
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const videoEl = document.getElementById("video");
 
     function splitText(text, len = 10) {
       const result = [];
@@ -83,55 +77,68 @@
     }
 
     function drawText(text) {
-      ctx.fillStyle = 'white';
+      ctx.fillStyle = "white";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#111827';
-      ctx.font = '36px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.fillStyle = "#111827";
+      ctx.font = "36px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.fillText(text, canvas.width / 2, canvas.height / 2);
     }
 
-    function speak(text) {
-      return new Promise(resolve => {
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'zh-CN';
-        utter.onend = resolve;
-        speechSynthesis.speak(utter);
-      });
-    }
-
-    async function generateAndPlay() {
-      const rawText = document.getElementById('text').value.trim();
-      if (!rawText) return alert('请输入内容');
+    async function generateFast() {
+      const rawText = document.getElementById("text").value.trim();
+      if (!rawText) return alert("请输入文字");
 
       const segments = splitText(rawText, 10);
-      const stream = canvas.captureStream(30);
-      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      const durationPerSegment = 800; // 每段展示时间（ms）
+
+      // 音频伪轨道（静音） + 播放朗读（不录制）
+      const audioCtx = new AudioContext();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      gain.gain.value = 0; // 静音
+      osc.connect(gain).connect(audioCtx.destination);
+      const audioDest = audioCtx.createMediaStreamDestination();
+      osc.connect(audioDest);
+      osc.start();
+
+      // 视频轨道
+      const videoStream = canvas.captureStream(30);
+      const mixedStream = new MediaStream([
+        ...videoStream.getTracks(),
+        ...audioDest.stream.getAudioTracks()
+      ]);
+
+      const recorder = new MediaRecorder(mixedStream, { mimeType: "video/webm" });
       const chunks = [];
 
-      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.ondataavailable = (e) => chunks.push(e.data);
       recorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
+        const blob = new Blob(chunks, { type: "video/webm" });
         const url = URL.createObjectURL(blob);
         videoEl.src = url;
-        videoEl.style.display = 'block';
+        videoEl.style.display = "block";
         await videoEl.play();
         if (document.pictureInPictureEnabled) {
           try {
             await videoEl.requestPictureInPicture();
           } catch (err) {
-            console.warn('画中画失败:', err);
+            console.warn("画中画失败:", err);
           }
         }
       };
 
+      // 启动录制 + 同时播放语音
       recorder.start();
+      const utter = new SpeechSynthesisUtterance(rawText);
+      utter.lang = "zh-CN";
+      speechSynthesis.speak(utter);
 
-      for (const seg of segments) {
-        drawText(seg);
-        await speak(seg); // 等语音播完
-        await new Promise(r => setTimeout(r, 400)); // 稍作缓冲
+      // 绘制所有段（快速）
+      for (let i = 0; i < segments.length; i++) {
+        drawText(segments[i]);
+        await new Promise((r) => setTimeout(r, durationPerSegment));
       }
 
       recorder.stop();
