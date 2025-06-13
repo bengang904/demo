@@ -76,6 +76,11 @@
   <button id="sendButton" onclick="sendMorse()">开始发送</button>
   <div id="status">等待输入…</div>
 
+  <!-- 静音音频用于保活 -->
+  <audio id="keepAliveAudio" autoplay loop muted playsinline class="hidden">
+    <source src="data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAAwAAABAAABEVkdUAAAADUlUUkMAAAAOAAAACwAAAFZPUkIAAAAMAAAADQAAAG1kYXQh" type="audio/mp3">
+  </audio>
+
   <script>
     const morseCodeMap = {
       A: ".-", B: "-...", C: "-.-.", D: "-..", E: ".", F: "..-.",
@@ -143,7 +148,26 @@
       return steps;
     }
 
+    function startKeepAliveAudio() {
+      const audio = document.getElementById('keepAliveAudio');
+      if (audio) {
+        const playAttempt = audio.play();
+        if (playAttempt && typeof playAttempt.then === "function") {
+          playAttempt.then(() => {
+            console.log("🎵 保活音频播放中");
+          }).catch(err => {
+            console.warn("⚠️ 自动播放受限，等待用户交互触发", err);
+          });
+        }
+      }
+    }
+
+    // 用户首次点击页面时触发音频播放
+    document.addEventListener("click", startKeepAliveAudio, { once: true });
+
     async function sendMorse() {
+      startKeepAliveAudio(); // 确保音频在发送前播放
+
       const sendBtn = document.getElementById("sendButton");
       const rawInput = document.getElementById("textInput").value;
       const status = document.getElementById("status");
@@ -210,6 +234,5 @@
       if (track) track.stop();
     };
   </script>
-
 </body>
 </html>
