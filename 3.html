@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>全身姿态检测</title>
+  <title>多人姿态检测</title>
   <style>
     html, body {
       margin: 0;
@@ -16,18 +16,11 @@
       justify-content: center;
       align-items: center;
     }
-
     #video, #canvas {
       object-fit: contain;
     }
-
-    #video {
-      display: none;
-    }
-
-    #canvas {
-      z-index: 10;
-    }
+    #video { display: none; }
+    #canvas { z-index: 10; }
   </style>
 </head>
 <body>
@@ -37,7 +30,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
 
 <script>
   let wakeLock = null;
@@ -56,9 +48,7 @@
   }
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      requestWakeLock();
-    }
+    if (document.visibilityState === 'visible') requestWakeLock();
   });
 
   function isMobileDevice() {
@@ -68,16 +58,12 @@
   async function setupCamera() {
     const video = document.getElementById("video");
     const constraints = {
-      video: {
-        facingMode: isMobileDevice() ? { exact: "environment" } : "user"
-      },
+      video: { facingMode: isMobileDevice() ? { exact: "environment" } : "user" },
       audio: false
     };
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = stream;
-    return new Promise((resolve) => {
-      video.onloadedmetadata = () => resolve(video);
-    });
+    return new Promise(resolve => video.onloadedmetadata = () => resolve(video));
   }
 
   function resizeElements(video, canvas) {
@@ -121,11 +107,9 @@
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
 
-    const model = poseDetection.SupportedModels.BlazePose;
+    const model = poseDetection.SupportedModels.MoveNet;
     const detector = await poseDetection.createDetector(model, {
-      runtime: "mediapipe",
-      modelType: "heavy", // 模型有更好的精度
-      solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/pose"
+      modelType: 'multi-pose'
     });
 
     async function render() {
@@ -135,11 +119,9 @@
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         const poses = await detector.estimatePoses(video);
-
-        if (poses.length > 0) {
-          const keypoints = poses[0].keypoints;
-          drawKeypoints(ctx, keypoints);
-          drawSkeleton(ctx, keypoints, model);
+        for (const pose of poses) {
+          drawKeypoints(ctx, pose.keypoints);
+          drawSkeleton(ctx, pose.keypoints, model);
         }
       }
       requestAnimationFrame(render);
