@@ -1,97 +1,132 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>猫咪检测</title>
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       background-color: black;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      overflow: hidden;
-      color: white;
-      font-family: sans-serif;
     }
-    #wrapper {
-      position: relative;
-    }
-    video, canvas {
-      width: 640px;
-      height: 480px;
-      border-radius: 8px;
-    }
-    canvas {
+    #video, #canvas {
+      object-fit: contain;
       position: absolute;
       top: 0;
       left: 0;
-      pointer-events: none;
+    }
+    #video {
+      display: none;
+    }
+    #canvas {
+      z-index: 10;
     }
   </style>
 </head>
 <body>
 
-<div id="wrapper">
-  <video id="video" autoplay muted playsinline></video>
-  <canvas id="canvas"></canvas>
-</div>
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
 
-<!-- 加载 TensorFlow.js 和 COCO-SSD 模型 -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
 
 <script>
+  let wakeLock = null;
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log('屏幕保持常亮');
+        wakeLock.addEventListener('release', () => {
+          console.log('屏幕唤醒锁已释放');
+        });
+      }
+    } catch (err) {
+      console.error('无法请求唤醒锁:', err);
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') requestWakeLock();
+  });
+
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
   async function setupCamera() {
     const video = document.getElementById("video");
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const constraints = {
+      video: { facingMode: isMobileDevice() ? { exact: "environment" } : "user" },
+      audio: false
+    };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = stream;
     return new Promise(resolve => {
       video.onloadedmetadata = () => resolve(video);
     });
   }
 
-  async function detectCat() {
+  function resizeCanvas(video, canvas) {
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    video.width = vw;
+    video.height = vh;
+    canvas.width = vw;
+    canvas.height = vh;
+  }
+
+  async function initialize() {
+    await requestWakeLock();
     const video = await setupCamera();
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const model = await cocoSsd.load();
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    async function render() {
+      if (video.videoWidth && video.videoHeight) {
+        resizeCanvas(video, canvas);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    async function detectFrame() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const predictions = await model.detect(video);
+        const predictions = await model.detect(video);
 
-      predictions.forEach(pred => {
-        if (pred.class === "cat" && pred.score > 0.5) { // 提高置信度要求
-          const [x, y, width, height] = pred.bbox;
+        // 使用你提供的绘图逻辑
+        predictions.forEach(pred => {
+          if (pred.class === "cat" && pred.score > 0.5) { // 提高置信度要求
+            const [x, y, width, height] = pred.bbox;
 
-          // 画边框
-          ctx.strokeStyle = "#00FF00"
-          ctx.lineWidth = 3;
-          ctx.strokeRect(x, y, width, height);
+            // 画边框
+            ctx.strokeStyle = "#00FF00"
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x, y, width, height);
 
-          // 在框中心写字
-          const label = `猫咪： ${(pred.score * 100).toFixed(1)}%`;
-          ctx.font = "18px sans-serif";
-          ctx.fillStyle = "#00FF00"
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(label, x + width / 2, y + height / 2);
-        }
-      });
+            // 在框中心写字
+            const label = `猫咪： ${(pred.score * 100).toFixed(1)}%`;
+            ctx.font = "18px sans-serif";
+            ctx.fillStyle = "#00FF00"
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(label, x + width / 2, y + height / 2);
+          }
+        });
+      }
 
-      requestAnimationFrame(detectFrame); // 实时更新
+      requestAnimationFrame(render);
     }
 
-    detectFrame();
+    render();
   }
 
-  detectCat();
+  initialize();
 </script>
 
 </body>
