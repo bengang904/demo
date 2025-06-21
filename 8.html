@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
   <meta charset="utf-8">
-  <title>环境声频谱 + YAMNet识别</title>
+  <title>环境声识别 + 频谱图</title>
   <style>
     body {
       font-family: sans-serif;
@@ -18,58 +18,71 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/yamnet"></script>
 </head>
 <body>
-  <h2>实时环境声频谱图 + 声音识别</h2>
+  <h2>环境声音识别 + 频谱图</h2>
   <div id="volume">音量: ...</div>
   <canvas id="canvas" width="600" height="200"></canvas>
   <h3 id="result">正在加载模型...</h3>
 
   <script>
-    const modelUrl = 'https://tfhub.dev/google/tfjs-model/yamnet/tfjs/1';
-    let model, classNames;
+    let model;
+    let audioCtx;
+    let analyser;
+    let source;
+    let canvas, ctx, width, height;
+    let floatBuffer = [];
 
-    async function loadModel() {
-      model = await tf.loadGraphModel(modelUrl, { fromTFHub: true });
-      const resp = await fetch(modelUrl + '/metadata.json');
-      const meta = await resp.json();
-      classNames = meta['labels'];
+    async function initModel() {
+      model = await yamnet.load();
+      document.getElementById('result').innerText = "模型已加载，开始识别...";
     }
 
-    async function start() {
-      await loadModel();
+    async function startAudio() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      source = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      const canvas = document.getElementById('canvas');
-      const ctx = canvas.getContext('2d');
-      const width = canvas.width;
-      const height = canvas.height;
       source.connect(analyser);
 
-      // 用 ScriptProcessorNode 获取音频 PCM 数据
-      const processor = audioContext.createScriptProcessor(16384, 1, 1);
+      const processor = audioCtx.createScriptProcessor(4096, 1, 1);
       source.connect(processor);
-      processor.connect(audioContext.destination);
+      processor.connect(audioCtx.destination);
 
-      processor.onaudioprocess = async (e) => {
-        const data = e.inputBuffer.getChannelData(0);
-        const input = tf.tensor(data).reshape([1, data.length]);
-        const scores = model.predict(input);
-        const scoresArray = await scores.array();
-        tf.dispose([input, scores]);
+      processor.onaudioprocess = (e) => {
+        const input = e.inputBuffer.getChannelData(0);
+        floatBuffer.push(...input);
 
-        const meanScores = scoresArray[0];
-        const maxIdx = meanScores.indexOf(Math.max(...meanScores));
-        const label = classNames[maxIdx];
-        document.getElementById('result').innerText = `识别结果: ${label}`;
+        // 每 1 秒做一次识别（YAMNet 期望 16kHz 采样率）
+        if (floatBuffer.length >= 16000) {
+          const slice = floatBuffer.slice(0, 16000);
+          floatBuffer = floatBuffer.slice(8000); // 重叠 0.5 秒提高稳定性
+          predict(slice);
+        }
       };
 
-      function drawSpectrum() {
+      drawSpectrum();
+    }
+
+    async function predict(data) {
+      const predictions = await model.predict(new Float32Array(data));
+      if (predictions && predictions.length > 0) {
+        const top = predictions[0]; // 置信度最高的
+        document.getElementById('result').innerText =
+          `识别结果: ${top.className} (${(top.score * 100).toFixed(1)}%)`;
+      }
+    }
+
+    function drawSpectrum() {
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      canvas = document.getElementById('canvas');
+      ctx = canvas.getContext('2d');
+      width = canvas.width;
+      height = canvas.height;
+
+      function draw() {
         analyser.getByteFrequencyData(dataArray);
         let sum = dataArray.reduce((a, b) => a + b, 0);
         let avg = sum / dataArray.length;
@@ -82,16 +95,18 @@
           ctx.fillStyle = `rgb(${barHeight + 100}, 50, 150)`;
           ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
         }
-        requestAnimationFrame(drawSpectrum);
+
+        requestAnimationFrame(draw);
       }
 
-      drawSpectrum();
+      draw();
     }
 
-    start().catch(err => {
+    initModel().then(startAudio).catch(err => {
       console.error('初始化失败：', err);
-      alert('请允许访问麦克风才能使用此功能');
+      alert('请允许访问麦克风，并确保联网以加载模型');
     });
   </script>
 </body>
 </html>
+
