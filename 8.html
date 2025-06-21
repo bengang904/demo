@@ -1,75 +1,70 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>敲门声识别 - YAMNet</title>
+  <meta charset="utf-8">
+  <title>环境声频谱分析</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #111;
+      color: #fff;
+      text-align: center;
+    }
+    canvas {
+      display: block;
+      margin: 20px auto;
+      background: #222;
+      border: 1px solid #444;
+    }
+  </style>
 </head>
 <body>
-  <h1>🎧 实时敲门声检测</h1>
-  <p id="status">加载模型中，请稍候…</p>
+  <h2>实时环境声频谱图</h2>
+  <div id="volume">音量: ...</div>
+  <canvas id="canvas" width="600" height="200"></canvas>
 
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0"></script>
   <script>
-    (async () => {
-      const modelUrl = "https://storage.googleapis.com/tfjs-models/savedmodel/yamnet/model.json";
-      const model = await tf.loadGraphModel(modelUrl);
-      document.getElementById('status').innerText = '模型加载完成，正在请求麦克风权限…';
+    async function startAudioAnalysis() {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 44100 } });
-      const audioCtx = new AudioContext({ sampleRate: 44100 });
-      const source = audioCtx.createMediaStreamSource(stream);
-      const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-      source.connect(processor);
-      processor.connect(audioCtx.destination);
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
 
-      let buffer = new Float32Array();
+      source.connect(analyser);
 
-      processor.onaudioprocess = (e) => {
-        const data = e.inputBuffer.getChannelData(0);
-        buffer = concatFloat32(buffer, data);
-        processIfReady();
-      };
+      function draw() {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = dataArray.reduce((a, b) => a + b, 0);
+        let avg = sum / dataArray.length;
+        document.getElementById('volume').innerText = `音量: ${avg.toFixed(2)}`;
 
-      const concatFloat32 = (a, b) => {
-        const result = new Float32Array(a.length + b.length);
-        result.set(a);
-        result.set(b, a.length);
-        return result;
-      };
-
-      const classNames = await fetch("https://storage.googleapis.com/tfjs-models/savedmodel/yamnet/yamnet_class_map.csv")
-        .then(r => r.text())
-        .then(text => text.split("\n").map(line => line.split(",")[2]));
-
-      const processIfReady = () => {
-        const sampleRate = 44100;
-        const requiredLength = 0.975 * sampleRate; // YAMNet expects ~0.975s
-        if (buffer.length >= requiredLength) {
-          const segment = buffer.slice(0, requiredLength);
-          buffer = buffer.slice(requiredLength / 2); // overlap 50%
-          runModel(segment);
+        // 绘图
+        ctx.clearRect(0, 0, width, height);
+        let barWidth = (width / dataArray.length);
+        let barHeight;
+        for (let i = 0; i < dataArray.length; i++) {
+          barHeight = dataArray[i];
+          ctx.fillStyle = `rgb(${barHeight + 100}, 50, 150)`;
+          ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
         }
-      };
 
-      const runModel = async (segment) => {
-        const floatTensor = tf.tensor(segment, [segment.length]);
-        const resampled = tf.image.resizeBilinear(floatTensor.reshape([1, segment.length, 1]), [16000, 1]).reshape([1, 16000]);
-        const prediction = model.predict(resampled);
-        const scores = prediction.arraySync()[0];
-        const maxIdx = scores.indexOf(Math.max(...scores));
-        const label = classNames[maxIdx];
-        const prob = scores[maxIdx];
+        requestAnimationFrame(draw);
+      }
 
-        if (prob > 0.5 && /knock|door/i.test(label)) {
-          document.getElementById('status').innerText = `🔔 检测到：${label}（${(prob * 100).toFixed(1)}%）`;
-        }
-        prediction.dispose();
-        resampled.dispose();
-        floatTensor.dispose();
-      };
+      draw();
+    }
 
-      document.getElementById('status').innerText = '✅ 正在监听中… 请敲一下桌子或门试试';
-    })();
+    startAudioAnalysis().catch(err => {
+      console.error('麦克风访问失败：', err);
+      alert('请允许访问麦克风才能使用此功能');
+    });
   </script>
 </body>
 </html>
