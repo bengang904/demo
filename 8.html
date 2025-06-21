@@ -1,62 +1,75 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>YAMNet 敲门声识别</title></head>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>敲门声识别 - YAMNet</title>
+</head>
 <body>
-  <h1>实时敲门声检测</h1>
-  <p id="status">加载中...</p>
+  <h1>🎧 实时敲门声检测</h1>
+  <p id="status">加载模型中，请稍候…</p>
 
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0"></script>
   <script>
-  (async () => {
-    const modelUrl = 'https://tfhub.dev/google/tfjs-model/yamnet/tfjs/1/model.json';
-    const model = await tf.loadGraphModel(modelUrl, {fromTFHub: true});
-    document.getElementById('status').innerText = '模型加载完成，正在初始化麦克风…';
+    (async () => {
+      const modelUrl = "https://storage.googleapis.com/tfjs-models/savedmodel/yamnet/model.json";
+      const model = await tf.loadGraphModel(modelUrl);
+      document.getElementById('status').innerText = '模型加载完成，正在请求麦克风权限…';
 
-    const stream = await navigator.mediaDevices.getUserMedia({audio: {channelCount: 1, sampleRate: 16000}});
-    const audioCtx = new AudioContext({sampleRate:16000});
-    const source = audioCtx.createMediaStreamSource(stream);
-    const recorder = audioCtx.createScriptProcessor(4096, 1, 1);
-    source.connect(recorder);
-    recorder.connect(audioCtx.destination);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 44100 } });
+      const audioCtx = new AudioContext({ sampleRate: 44100 });
+      const source = audioCtx.createMediaStreamSource(stream);
+      const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+      source.connect(processor);
+      processor.connect(audioCtx.destination);
 
-    let buffer = new Float32Array();
+      let buffer = new Float32Array();
 
-    recorder.onaudioprocess = e => {
-      const data = e.inputBuffer.getChannelData(0);
-      buffer = concatenate(buffer, data);
-      processFrames();
-    };
+      processor.onaudioprocess = (e) => {
+        const data = e.inputBuffer.getChannelData(0);
+        buffer = concatFloat32(buffer, data);
+        processIfReady();
+      };
 
-    const classMap = await fetch(modelUrl.replace('model.json','class_map.csv'))
-                           .then(r=>r.text())
-                           .then(txt=>txt.split('\n').slice(1).map(s=>s.split(',')[2]));
+      const concatFloat32 = (a, b) => {
+        const result = new Float32Array(a.length + b.length);
+        result.set(a);
+        result.set(b, a.length);
+        return result;
+      };
 
-    async function processFrames() {
-      while (buffer.length >= 0.96 * 16000) {
-        const frame = buffer.slice(0, 0.96 * 16000);
-        buffer = buffer.slice(0.48 * 16000);
-        const input = tf.tensor(frame, [1, frame.length]);
-        const result = model.execute({audio: input}, 'Identity');
-        const scores = result.arraySync()[0];
-        const maxIdx = scores.indexOf(Math.max(...scores));
-        const label = classMap[maxIdx];
-        const prob = scores[maxIdx];
-        if (prob > 0.4 && /knock|door/i.test(label)) {
-          document.getElementById('status').innerText = `🔔检测到：${label} (${(prob*100).toFixed(1)}%)`;
+      const classNames = await fetch("https://storage.googleapis.com/tfjs-models/savedmodel/yamnet/yamnet_class_map.csv")
+        .then(r => r.text())
+        .then(text => text.split("\n").map(line => line.split(",")[2]));
+
+      const processIfReady = () => {
+        const sampleRate = 44100;
+        const requiredLength = 0.975 * sampleRate; // YAMNet expects ~0.975s
+        if (buffer.length >= requiredLength) {
+          const segment = buffer.slice(0, requiredLength);
+          buffer = buffer.slice(requiredLength / 2); // overlap 50%
+          runModel(segment);
         }
-        input.dispose();
-        result.dispose();
-      }
-    }
+      };
 
-    function concatenate(a, b){
-      const c = new Float32Array(a.length + b.length);
-      c.set(a); c.set(b, a.length);
-      return c;
-    }
+      const runModel = async (segment) => {
+        const floatTensor = tf.tensor(segment, [segment.length]);
+        const resampled = tf.image.resizeBilinear(floatTensor.reshape([1, segment.length, 1]), [16000, 1]).reshape([1, 16000]);
+        const prediction = model.predict(resampled);
+        const scores = prediction.arraySync()[0];
+        const maxIdx = scores.indexOf(Math.max(...scores));
+        const label = classNames[maxIdx];
+        const prob = scores[maxIdx];
 
-    document.getElementById('status').innerText = '监听中…';
-  })();
+        if (prob > 0.5 && /knock|door/i.test(label)) {
+          document.getElementById('status').innerText = `🔔 检测到：${label}（${(prob * 100).toFixed(1)}%）`;
+        }
+        prediction.dispose();
+        resampled.dispose();
+        floatTensor.dispose();
+      };
+
+      document.getElementById('status').innerText = '✅ 正在监听中… 请敲一下桌子或门试试';
+    })();
   </script>
 </body>
 </html>
