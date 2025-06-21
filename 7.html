@@ -88,28 +88,24 @@
     const ctx = canvas.getContext("2d");
     const model = await cocoSsd.load();
 
-    let predictions = [];
-    let lastDetectTime = 0;
-
     async function render() {
       if (video.videoWidth && video.videoHeight) {
         resizeCanvas(video, canvas);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const now = performance.now();
-        if (now - lastDetectTime > 100) {
-          predictions = await model.detect(video);
-          lastDetectTime = now;
-        }
+        const predictions = await model.detect(video);
 
         predictions.forEach(pred => {
           if (pred.class === "cat" && pred.score > 0.5) {
             const [x, y, width, height] = pred.bbox;
+
+            // 绿色边框
             ctx.strokeStyle = "#00FF00";
             ctx.lineWidth = 3;
             ctx.strokeRect(x, y, width, height);
 
+            // 精确居中文字
             const label = `猫咪： ${(pred.score * 100).toFixed(1)}%`;
             ctx.font = "18px sans-serif";
             ctx.fillStyle = "#00FF00";
