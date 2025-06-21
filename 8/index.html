@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>环境声识别</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script defer type="module" src="index.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        background-color: #f7f9fb;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        background-color: #ffffff;
+        padding: 30px 20px;
+        border-radius: 16px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+        width: 100%;
+        max-width: 640px;
+        text-align: center;
+        overflow: hidden;
+      }
+
+      h1 {
+        font-size: 22px;
+        margin-bottom: 20px;
+        color: #333;
+      }
+
+      button {
+        background-color: #1a1a1a;
+        color: white;
+        font-size: 16px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 14px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        max-width: 100%;
+        word-break: break-word;
+      }
+
+      button:hover {
+        background-color: #000000;
+      }
+
+      audio {
+        display: none;
+        margin-top: 20px;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      canvas {
+        margin: 20px auto;
+        display: block;
+        border-radius: 8px;
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+        width: 100% !important;
+        height: auto;
+        max-width: 100%;
+      }
+
+      pre {
+        background: #f0f0f0;
+        padding: 12px;
+        border-radius: 8px;
+        text-align: left;
+        color: #333;
+        font-family: monospace;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>环境声识别</h1>
+      <button id="recordBtn">点击录音</button>
+      <audio controls></audio>
+      <canvas id="canvas" width="640" height="100"></canvas>
+      <p><strong>相似结果：</strong></p>
+      <pre id="predict">点击录音进行识别</pre>
+    </div>
+  </body>
+</html>
