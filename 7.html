@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>猫咪检测</title>
+  <title>猫咪识别</title>
   <style>
     html, body {
       margin: 0;
@@ -36,25 +36,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
 
 <script>
-  let wakeLock = null;
-  async function requestWakeLock() {
-    try {
-      if ('wakeLock' in navigator) {
-        wakeLock = await navigator.wakeLock.request('screen');
-        console.log('屏幕保持常亮');
-        wakeLock.addEventListener('release', () => {
-          console.log('屏幕唤醒锁已释放');
-        });
-      }
-    } catch (err) {
-      console.error('无法请求唤醒锁:', err);
-    }
-  }
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') requestWakeLock();
-  });
-
   function isMobileDevice() {
     return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   }
@@ -62,14 +43,22 @@
   async function setupCamera() {
     const video = document.getElementById("video");
     const constraints = {
-      video: { facingMode: isMobileDevice() ? { exact: "environment" } : "user" },
+      video: {
+        facingMode: isMobileDevice() ? { ideal: "environment" } : "user"
+      },
       audio: false
     };
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    video.srcObject = stream;
-    return new Promise(resolve => {
-      video.onloadedmetadata = () => resolve(video);
-    });
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+      return new Promise(resolve => {
+        video.onloadedmetadata = () => resolve(video);
+      });
+    } catch (err) {
+      alert("无法访问摄像头：" + err.name + "\n请检查浏览器权限或设备支持情况。");
+      throw err;
+    }
   }
 
   function resizeCanvas(video, canvas) {
@@ -82,7 +71,6 @@
   }
 
   async function initialize() {
-    await requestWakeLock();
     const video = await setupCamera();
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
