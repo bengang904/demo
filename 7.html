@@ -1,137 +1,72 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BBC RSS</title>
+  <meta charset="UTF-8">
+  <title>人像深度估计</title>
   <style>
-    body {
-      font-family: "Noto Sans", sans-serif;
-      max-width: 800px;
-      margin: 2em auto;
-      line-height: 1.6;
-      padding: 0 1em;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 1.5em;
-    }
-    #rss-list {
-      list-style: none;
-      padding: 0;
-    }
-    #rss-list li {
+    body, html {
+      margin: 0;
+      background: black;
       display: flex;
-      margin-bottom: 1.5em;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 1em;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
     }
-    .thumb {
-      flex: 0 0 120px;
-      margin-right: 1em;
-    }
-    .thumb img {
-      width: 100%;
+    canvas, video {
+      display: block;
+      max-width: 100%;
       height: auto;
-      display: block;
-      border-radius: 4px;
-    }
-    .content {
-      flex: 1;
-    }
-    .content a.title {
-      text-decoration: none;
-      color: #0055a5;
-      font-size: 1.2em;
-      font-weight: bold;
-    }
-    .content a.title:hover {
-      text-decoration: underline;
-    }
-    .pubdate {
-      display: block;
-      color: #666;
-      font-size: 0.85em;
-      margin: 0.3em 0;
-    }
-    .description {
-      color: #333;
-    }
-    .error {
-      color: red;
-      text-align: center;
     }
   </style>
 </head>
 <body>
-  <h1>BBC 中文繁體 最新新聞</h1>
-  <ul id="rss-list">
-    <li>載入中…</li>
-  </ul>
 
-  <script>
-    // 公共 CORS 代理與 RSS 源
-    const PROXY   = 'https://api.allorigins.win/raw?url=';
-    const RSS_URL = 'https://feeds.bbci.co.uk/zhongwen/trad/rss.xml';
+<video id="video" autoplay playsinline style="display:none"></video>
+<canvas id="canvas"></canvas>
 
-    async function loadRSS() {
-      const container = document.getElementById('rss-list');
-      try {
-        const resp = await fetch(PROXY + encodeURIComponent(RSS_URL));
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        const xmlText = await resp.text();
-        const xml = new DOMParser().parseFromString(xmlText, 'application/xml');
-        const items = xml.querySelectorAll('item');
-        container.innerHTML = '';
+<!-- TensorFlow.js Core & WebGL -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
 
-        if (items.length === 0) {
-          container.innerHTML = '<li class="error">目前沒有可顯示的新聞項目。</li>';
-          return;
-        }
+<!-- Depth Estimation Model -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/depth-estimation"></script>
 
-        items.forEach(item => {
-          const titleEl     = item.querySelector('title');
-          const linkEl      = item.querySelector('link');
-          const descEl      = item.querySelector('description');
-          const pubDateEl   = item.querySelector('pubDate');
-          const thumbEl     = item.querySelector('media\\:thumbnail, thumbnail');
+<script>
+  async function setup() {
+    // 启用 WebGL
+    await tf.setBackend('webgl');
 
-          const title   = titleEl? titleEl.textContent.trim() : '(無標題)';
-          const link    = linkEl? linkEl.textContent.trim() : '#';
-          const desc    = descEl? descEl.textContent.trim() : '';
-          const dateStr = pubDateEl
-            ? new Date(pubDateEl.textContent).toLocaleString('zh-TW', {
-                year: 'numeric', month: '2-digit', day: '2-digit',
-                hour: '2-digit', minute: '2-digit'
-              })
-            : '';
-          const thumbUrl = thumbEl? thumbEl.getAttribute('url') : null;
+    // 获取摄像头
+    const video = document.getElementById('video');
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
 
-          const li = document.createElement('li');
-          li.innerHTML = `
-            ${thumbUrl
-              ? `<div class="thumb"><a href="${link}" target="_blank" rel="noopener">
-                   <img src="${thumbUrl}" alt="縮圖">
-                 </a></div>`
-              : `<div class="thumb"></div>`
-            }
-            <div class="content">
-              <a class="title" href="${link}" target="_blank" rel="noopener">${title}</a>
-              ${dateStr? `<span class="pubdate">${dateStr}</span>` : ''}
-              ${desc? `<p class="description">${desc}</p>` : ''}
-            </div>
-          `;
-          container.appendChild(li);
-        });
-      } catch (err) {
-        console.error('RSS 載入錯誤：', err);
-        container.innerHTML = '<li class="error">RSS 載入失敗，請稍後再試。</li>';
-      }
+    await new Promise(resolve => video.onloadedmetadata = resolve);
+
+    const canvas = document.getElementById('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+
+    // 加载深度估计模型
+    const estimator = await depthEstimation.createEstimator(
+      depthEstimation.SupportedModels.ARPortraitDepth);
+
+    async function render() {
+      const depthMap = await estimator.estimateDepth(video);
+
+      const img = await depthMap.toCanvasImageSource();
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      requestAnimationFrame(render);
     }
 
-    // 啟動
-    loadRSS();
-  </script>
+    render();
+  }
+
+  setup();
+</script>
+
 </body>
 </html>
