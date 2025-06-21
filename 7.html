@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>猫咪识别</title>
+  <title>猫猫识别</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background-color: black;
-      overflow: hidden;
       height: 100%;
       width: 100%;
+      background-color: black;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -22,8 +21,8 @@
 
     video {
       max-height: 80vh;
-      object-fit: contain;
       border: 1px solid white;
+      object-fit: contain;
     }
 
     #result {
@@ -36,7 +35,7 @@
 <body>
 
 <video id="video" autoplay playsinline></video>
-<canvas id="canvas" style="display: none;"></canvas>
+<canvas id="canvas" style="display:none;"></canvas>
 <div id="result"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0"></script>
@@ -59,7 +58,7 @@
         audio: false
       });
     } catch (err) {
-      console.warn("摄像头配置失败，使用默认摄像头", err);
+      console.warn("摄像头配置失败，尝试使用默认摄像头", err);
       stream = await navigator.mediaDevices.getUserMedia({ video: true });
     }
 
@@ -74,6 +73,7 @@
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const resultEl = document.getElementById("result");
+
     const model = await mobilenet.load();
 
     canvas.width = video.videoWidth;
@@ -86,7 +86,7 @@
 
       if (top && top.className.toLowerCase().includes("cat")) {
         resultEl.style.visibility = "visible";
-        resultEl.innerText = `🐱 检测到猫咪 (${top.className}，置信度 ${Math.round(top.probability * 100)}%)`;
+        resultEl.innerText = `🐱 猫咪: ${top.className} (${Math.round(top.probability * 100)}%)`;
       } else {
         resultEl.style.visibility = "hidden";
         resultEl.innerText = "";
