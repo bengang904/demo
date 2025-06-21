@@ -1,77 +1,62 @@
 <!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8">
-  <title>YAMNet 环境音识别</title>
-  <style>
-    body { background: #111; color: #0f0; font-family: sans-serif;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      height: 100vh; margin: 0; }
-    #status { font-size: 1.2em; margin-top: 20px; }
-  </style>
-</head>
+<html>
+<head><meta charset="utf-8"><title>YAMNet 敲门声识别</title></head>
 <body>
-  <h1>侦测中：猫叫、门铃、警报</h1>
-  <div id="status">加载模型中...</div>
+  <h1>实时敲门声检测</h1>
+  <p id="status">加载中...</p>
 
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script>
-    const TARGET_CLASSES = ["Meow", "Doorbell", "Siren"];
-    const THRESHOLD = 0.3;
-    const FRAME_DURATION = 0.96; // 每帧约 0.96 秒
+  (async () => {
+    const modelUrl = 'https://tfhub.dev/google/tfjs-model/yamnet/tfjs/1/model.json';
+    const model = await tf.loadGraphModel(modelUrl, {fromTFHub: true});
+    document.getElementById('status').innerText = '模型加载完成，正在初始化麦克风…';
 
-    async function init() {
-      const statusEl = document.getElementById('status');
-      statusEl.innerText = '加载 YAMNet 模型...';
+    const stream = await navigator.mediaDevices.getUserMedia({audio: {channelCount: 1, sampleRate: 16000}});
+    const audioCtx = new AudioContext({sampleRate:16000});
+    const source = audioCtx.createMediaStreamSource(stream);
+    const recorder = audioCtx.createScriptProcessor(4096, 1, 1);
+    source.connect(recorder);
+    recorder.connect(audioCtx.destination);
 
-      const model = await tf.loadGraphModel(
-        'https://storage.googleapis.com/tfjs-models/savedmodel/yamnet/tfjs/model.json'
-      );
+    let buffer = new Float32Array();
 
-      statusEl.innerText = '初始化音频...';
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioCtx = new AudioContext({ sampleRate: 16000 });
-      const source = audioCtx.createMediaStreamSource(stream);
-      const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-      source.connect(processor);
-      processor.connect(audioCtx.destination);
+    recorder.onaudioprocess = e => {
+      const data = e.inputBuffer.getChannelData(0);
+      buffer = concatenate(buffer, data);
+      processFrames();
+    };
 
-      statusEl.innerText = '侦测中...';
-      const audioBuffer = [];
+    const classMap = await fetch(modelUrl.replace('model.json','class_map.csv'))
+                           .then(r=>r.text())
+                           .then(txt=>txt.split('\n').slice(1).map(s=>s.split(',')[2]));
 
-      processor.onaudioprocess = async (e) => {
-        audioBuffer.push(...e.inputBuffer.getChannelData(0));
-        const neededSamples = audioCtx.sampleRate * FRAME_DURATION;
-        if (audioBuffer.length >= neededSamples) {
-          const frame = audioBuffer.splice(0, neededSamples);
-          const input = tf.tensor([frame], [1, neededSamples], 'float32');
-          const output = model.predict(input);
-          const scores = await output.array();
-          tf.dispose([input, output]);
-          const meanScores = scores[0];
-
-          let maxScore = -Infinity, maxIdx = -1;
-          TARGET_CLASSES.forEach((cls, idx) => {
-            const clsIndex = outputToIndexMap[cls];
-            if (meanScores[clsIndex] > maxScore) {
-              maxScore = meanScores[clsIndex];
-              maxIdx = clsIndex;
-            }
-          });
-
-          if (maxScore > THRESHOLD) {
-            statusEl.innerText = `${TARGET_CLASSES.map(c=>c)[TARGET_CLASSES.indexOf(Object.keys(outputToIndexMap).filter(k=>outputToIndexMap[k]===maxIdx)[0])]}（${(maxScore*100).toFixed(1)}%）`;
-          }
+    async function processFrames() {
+      while (buffer.length >= 0.96 * 16000) {
+        const frame = buffer.slice(0, 0.96 * 16000);
+        buffer = buffer.slice(0.48 * 16000);
+        const input = tf.tensor(frame, [1, frame.length]);
+        const result = model.execute({audio: input}, 'Identity');
+        const scores = result.arraySync()[0];
+        const maxIdx = scores.indexOf(Math.max(...scores));
+        const label = classMap[maxIdx];
+        const prob = scores[maxIdx];
+        if (prob > 0.4 && /knock|door/i.test(label)) {
+          document.getElementById('status').innerText = `🔔检测到：${label} (${(prob*100).toFixed(1)}%)`;
         }
-      };
+        input.dispose();
+        result.dispose();
+      }
     }
 
-    // 解析 model.json 中的标签映射（需预加载）
-    let outputToIndexMap = {};
-    fetch('https://storage.googleapis.com/audioset/yamnet_class_map.json')
-      .then(r => r.json())
-      .then(map => { outputToIndexMap = map; init(); })
-      .catch(err => document.getElementById('status').innerText = '加载标签失败:' + err);
+    function concatenate(a, b){
+      const c = new Float32Array(a.length + b.length);
+      c.set(a); c.set(b, a.length);
+      return c;
+    }
+
+    document.getElementById('status').innerText = '监听中…';
+  })();
   </script>
 </body>
 </html>
