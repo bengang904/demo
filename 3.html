@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>全身姿态检测</title>
+  <title>多人姿态检测</title>
   <style>
     html, body {
       margin: 0;
@@ -37,7 +37,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
 
 <script>
   let wakeLock = null;
@@ -45,13 +44,10 @@
     try {
       if ('wakeLock' in navigator) {
         wakeLock = await navigator.wakeLock.request('screen');
-        console.log('屏幕保持常亮');
-        wakeLock.addEventListener('release', () => {
-          console.log('屏幕唤醒锁已释放');
-        });
+        wakeLock.addEventListener('release', () => console.log('唤醒锁已释放'));
       }
     } catch (err) {
-      console.error('无法请求唤醒锁:', err);
+      console.error('请求唤醒锁失败:', err);
     }
   }
 
@@ -69,15 +65,22 @@
     const video = document.getElementById("video");
     const constraints = {
       video: {
-        facingMode: isMobileDevice() ? { exact: "environment" } : "user"
+        facingMode: isMobileDevice() ? { ideal: "environment" } : "user"
       },
       audio: false
     };
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    video.srcObject = stream;
-    return new Promise((resolve) => {
-      video.onloadedmetadata = () => resolve(video);
-    });
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+      return new Promise((resolve) => {
+        video.onloadedmetadata = () => resolve(video);
+      });
+    } catch (err) {
+      console.error("无法访问摄像头:", err.name, err.message);
+      alert("摄像头访问失败，请检查浏览器权限或设备兼容性。");
+      throw err;
+    }
   }
 
   function resizeElements(video, canvas) {
@@ -121,11 +124,9 @@
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
 
-    const model = poseDetection.SupportedModels.BlazePose;
+    const model = poseDetection.SupportedModels.MoveNet;
     const detector = await poseDetection.createDetector(model, {
-      runtime: "mediapipe",
-      modelType: "full", // full 模型有更好的精度
-      solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/pose"
+      modelType: poseDetection.movenet.modelType.MULTIPOSE_LIGHTNING, // ✅ 修正后的合法写法
     });
 
     async function render() {
@@ -134,12 +135,14 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const poses = await detector.estimatePoses(video);
+        const poses = await detector.estimatePoses(video, {
+          maxPoses: 6,
+          flipHorizontal: false
+        });
 
-        if (poses.length > 0) {
-          const keypoints = poses[0].keypoints;
-          drawKeypoints(ctx, keypoints);
-          drawSkeleton(ctx, keypoints, model);
+        for (const pose of poses) {
+          drawKeypoints(ctx, pose.keypoints);
+          drawSkeleton(ctx, pose.keypoints, model);
         }
       }
       requestAnimationFrame(render);
