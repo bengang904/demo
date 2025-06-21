@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>猫咪检测</title>
+  <title>猫猫检测</title>
   <style>
     html, body {
       margin: 0;
@@ -12,15 +12,12 @@
       overflow: hidden;
       height: 100%;
       width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
     }
     #video, #canvas {
       object-fit: contain;
       position: absolute;
-      top: 0;
-      left: 0;
+      top: 0; bottom: 0; left: 0; right: 0;
+      margin: auto;
     }
     #video {
       display: none;
@@ -99,23 +96,23 @@
 
         const predictions = await model.detect(video);
 
-        // 使用你提供的绘图逻辑
         predictions.forEach(pred => {
-          if (pred.class === "cat" && pred.score > 0.5) { // 提高置信度要求
+          if (pred.class === "cat" && pred.score > 0.5) {
             const [x, y, width, height] = pred.bbox;
 
-            // 画边框
-            ctx.strokeStyle = "#00FF00"
+            // 绿色边框
+            ctx.strokeStyle = "#00FF00";
             ctx.lineWidth = 3;
             ctx.strokeRect(x, y, width, height);
 
-            // 在框中心写字
+            // 精确居中文字
             const label = `猫咪： ${(pred.score * 100).toFixed(1)}%`;
             ctx.font = "18px sans-serif";
-            ctx.fillStyle = "#00FF00"
-            ctx.textAlign = "center";
+            ctx.fillStyle = "#00FF00";
+            ctx.textAlign = "left";
             ctx.textBaseline = "middle";
-            ctx.fillText(label, x + width / 2, y + height / 2);
+            const textWidth = ctx.measureText(label).width;
+            ctx.fillText(label, x + width / 2 - textWidth / 2, y + height / 2);
           }
         });
       }
