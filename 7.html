@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>猫咪检测</title>
+  <title>多物体检测</title>
   <style>
     html, body {
       margin: 0;
@@ -72,6 +72,18 @@
     }
   }
 
+  function stringToColor(str) {
+    // 为每个类别名生成不同颜色
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const color = '#' + ((hash >> 24) & 0xFF).toString(16).padStart(2, '0') +
+                        ((hash >> 16) & 0xFF).toString(16).padStart(2, '0') +
+                        ((hash >> 8) & 0xFF).toString(16).padStart(2, '0');
+    return color;
+  }
+
   async function initialize() {
     const video = await setupCamera();
     const canvas = document.getElementById("canvas");
@@ -80,7 +92,7 @@
     const model = await cocoSsd.load({ base: 'lite_mobilenet_v2' });
 
     let lastDetectionTime = 0;
-    const detectionInterval = 500; // 每500ms检测一次
+    const detectionInterval = 500;
     let lastPredictions = [];
 
     async function render(timestamp) {
@@ -99,16 +111,17 @@
       }
 
       lastPredictions.forEach(pred => {
-        if (pred.class === "cat" && pred.score > 0.5) {
+        if (pred.score > 0.5) {
           const [x, y, width, height] = pred.bbox;
+          const label = `${pred.class}（${(pred.score * 100).toFixed(1)}%）`;
+          const color = stringToColor(pred.class);
 
-          ctx.strokeStyle = "#00FF00";
+          ctx.strokeStyle = color;
           ctx.lineWidth = 3;
           ctx.strokeRect(x, y, width, height);
 
-          const label = `猫咪： ${(pred.score * 100).toFixed(1)}%`;
           ctx.font = "18px sans-serif";
-          ctx.fillStyle = "#00FF00";
+          ctx.fillStyle = color;
           ctx.textAlign = "left";
           ctx.textBaseline = "middle";
           const textWidth = ctx.measureText(label).width;
