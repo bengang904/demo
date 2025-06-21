@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>猫咪识别</title>
+  <title>猫咪检测</title>
   <style>
     html, body {
       margin: 0;
@@ -61,54 +61,63 @@
     }
   }
 
-  function resizeCanvas(video, canvas) {
-    const vw = video.videoWidth;
-    const vh = video.videoHeight;
-    video.width = vw;
-    video.height = vh;
-    canvas.width = vw;
-    canvas.height = vh;
+  let canvasResized = false;
+  function resizeCanvasOnce(video, canvas) {
+    if (!canvasResized && video.videoWidth && video.videoHeight) {
+      video.width = video.videoWidth;
+      video.height = video.videoHeight;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvasResized = true;
+    }
   }
 
   async function initialize() {
     const video = await setupCamera();
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    const model = await cocoSsd.load();
 
-    async function render() {
-      if (video.videoWidth && video.videoHeight) {
-        resizeCanvas(video, canvas);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const model = await cocoSsd.load({ base: 'lite_mobilenet_v2' });
 
-        const predictions = await model.detect(video);
+    let lastDetectionTime = 0;
+    const detectionInterval = 500; // 每500ms检测一次
+    let lastPredictions = [];
 
-        predictions.forEach(pred => {
-          if (pred.class === "cat" && pred.score > 0.5) {
-            const [x, y, width, height] = pred.bbox;
+    async function render(timestamp) {
+      requestAnimationFrame(render);
 
-            // 绿色边框
-            ctx.strokeStyle = "#00FF00";
-            ctx.lineWidth = 3;
-            ctx.strokeRect(x, y, width, height);
+      if (!video.videoWidth || !video.videoHeight) return;
 
-            // 精确居中文字
-            const label = `猫咪： ${(pred.score * 100).toFixed(1)}%`;
-            ctx.font = "18px sans-serif";
-            ctx.fillStyle = "#00FF00";
-            ctx.textAlign = "left";
-            ctx.textBaseline = "middle";
-            const textWidth = ctx.measureText(label).width;
-            ctx.fillText(label, x + width / 2 - textWidth / 2, y + height / 2);
-          }
-        });
+      resizeCanvasOnce(video, canvas);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const now = performance.now();
+      if (now - lastDetectionTime > detectionInterval) {
+        lastPredictions = await model.detect(video);
+        lastDetectionTime = now;
       }
 
-      requestAnimationFrame(render);
+      lastPredictions.forEach(pred => {
+        if (pred.class === "cat" && pred.score > 0.5) {
+          const [x, y, width, height] = pred.bbox;
+
+          ctx.strokeStyle = "#00FF00";
+          ctx.lineWidth = 3;
+          ctx.strokeRect(x, y, width, height);
+
+          const label = `猫咪： ${(pred.score * 100).toFixed(1)}%`;
+          ctx.font = "18px sans-serif";
+          ctx.fillStyle = "#00FF00";
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          const textWidth = ctx.measureText(label).width;
+          ctx.fillText(label, x + width / 2 - textWidth / 2, y + height / 2);
+        }
+      });
     }
 
-    render();
+    requestAnimationFrame(render);
   }
 
   initialize();
