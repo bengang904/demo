@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>全身姿态检测</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #video, #canvas {
+      object-fit: contain;
+    }
+
+    #video {
+      display: none;
+    }
+
+    #canvas {
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+
+<script>
+  let wakeLock = null;
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log('屏幕保持常亮');
+        wakeLock.addEventListener('release', () => {
+          console.log('屏幕唤醒锁已释放');
+        });
+      }
+    } catch (err) {
+      console.error('无法请求唤醒锁:', err);
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      requestWakeLock();
+    }
+  });
+
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
+  async function setupCamera() {
+    const video = document.getElementById("video");
+    const constraints = {
+      video: {
+        facingMode: isMobileDevice() ? { exact: "environment" } : "user"
+      },
+      audio: false
+    };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = stream;
+    return new Promise((resolve) => {
+      video.onloadedmetadata = () => resolve(video);
+    });
+  }
+
+  function resizeElements(video, canvas) {
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    video.width = vw;
+    video.height = vh;
+    canvas.width = vw;
+    canvas.height = vh;
+  }
+
+  function drawKeypoints(ctx, keypoints) {
+    ctx.fillStyle = "red";
+    keypoints.forEach(pt => {
+      if (pt.score > 0.3) {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    });
+  }
+
+  function drawSkeleton(ctx, keypoints, model) {
+    const adjacentPairs = poseDetection.util.getAdjacentPairs(model);
+    ctx.strokeStyle = "lime";
+    ctx.lineWidth = 2;
+    adjacentPairs.forEach(([i, j]) => {
+      const p1 = keypoints[i], p2 = keypoints[j];
+      if (p1.score > 0.3 && p2.score > 0.3) {
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      }
+    });
+  }
+
+  async function initialize() {
+    await requestWakeLock();
+    const video = await setupCamera();
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const model = poseDetection.SupportedModels.BlazePose;
+    const detector = await poseDetection.createDetector(model, {
+      runtime: "mediapipe",
+      modelType: "full", // full 模型有更好的精度
+      solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/pose"
+    });
+
+    async function render() {
+      if (video.videoWidth && video.videoHeight) {
+        resizeElements(video, canvas);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const poses = await detector.estimatePoses(video);
+
+        if (poses.length > 0) {
+          const keypoints = poses[0].keypoints;
+          drawKeypoints(ctx, keypoints);
+          drawSkeleton(ctx, keypoints, model);
+        }
+      }
+      requestAnimationFrame(render);
+    }
+
+    render();
+  }
+
+  initialize();
+</script>
+
+</body>
+</html>
