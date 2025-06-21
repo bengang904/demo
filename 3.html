@@ -124,7 +124,7 @@
     const model = poseDetection.SupportedModels.BlazePose;
     const detector = await poseDetection.createDetector(model, {
       runtime: "mediapipe",
-      modelType: "full", // full 模型有更好的精度
+      modelType: "heavy", // full 模型有更好的精度
       solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/pose"
     });
 
