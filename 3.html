@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>多人姿态检测</title>
+  <title>姿态检测</title>
   <style>
     html, body {
       margin: 0;
@@ -109,7 +109,7 @@
 
     const model = poseDetection.SupportedModels.MoveNet;
     const detector = await poseDetection.createDetector(model, {
-      modelType: 'multi-pose'
+        modelType: 'MultiPose.Lightning'
     });
 
     async function render() {
