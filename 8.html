@@ -1,70 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
   <meta charset="utf-8">
-  <title>环境声频谱分析</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #111;
-      color: #fff;
-      text-align: center;
-    }
-    canvas {
-      display: block;
-      margin: 20px auto;
-      background: #222;
-      border: 1px solid #444;
-    }
-  </style>
+  <title>YAMNet 实时环境声识别</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
 </head>
 <body>
-  <h2>实时环境声频谱图</h2>
-  <div id="volume">音量: ...</div>
-  <canvas id="canvas" width="600" height="200"></canvas>
+  <h2>实时环境声音识别（YAMNet）</h2>
+  <div id="result">加载中...</div>
 
   <script>
-    async function startAudioAnalysis() {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
+    const modelUrl = 'https://tfhub.dev/google/tfjs-model/yamnet/tfjs/1';
+    let model, classNames;
 
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      const canvas = document.getElementById('canvas');
-      const ctx = canvas.getContext('2d');
-      const width = canvas.width;
-      const height = canvas.height;
-
-      source.connect(analyser);
-
-      function draw() {
-        analyser.getByteFrequencyData(dataArray);
-        let sum = dataArray.reduce((a, b) => a + b, 0);
-        let avg = sum / dataArray.length;
-        document.getElementById('volume').innerText = `音量: ${avg.toFixed(2)}`;
-
-        // 绘图
-        ctx.clearRect(0, 0, width, height);
-        let barWidth = (width / dataArray.length);
-        let barHeight;
-        for (let i = 0; i < dataArray.length; i++) {
-          barHeight = dataArray[i];
-          ctx.fillStyle = `rgb(${barHeight + 100}, 50, 150)`;
-          ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
-        }
-
-        requestAnimationFrame(draw);
-      }
-
-      draw();
+    async function loadModel() {
+      model = await tf.loadGraphModel(modelUrl, { fromTFHub: true });
+      // 加载类别标签
+      const resp = await fetch(modelUrl + '/metadata.json');
+      const meta = await resp.json();
+      classNames = meta['labels'];
     }
 
-    startAudioAnalysis().catch(err => {
-      console.error('麦克风访问失败：', err);
-      alert('请允许访问麦克风才能使用此功能');
-    });
+    async function start() {
+      await loadModel();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const processor = audioCtx.createScriptProcessor(16384, 1, 1);
+
+      source.connect(processor);
+      processor.connect(audioCtx.destination);
+
+      processor.onaudioprocess = async (e) => {
+        const data = e.inputBuffer.getChannelData(0);
+        // YAMNet 期望：mono、16 kHz, 值范围[-1,1]
+        const input = tf.tensor(data).reshape([1, data.length]);
+        const output = model.predict(input);
+        const scores = await output.array();
+        tf.dispose([input, output]);
+
+        const meanScores = scores[0].reduce((acc, cur, i) => {
+          acc[i] = (acc[i] || 0) + cur;
+          return acc;
+        }, []);
+        const maxIndex = meanScores.indexOf(Math.max(...meanScores));
+        document.getElementById('result').innerText =
+          `检测到：${classNames[maxIndex]}`;
+      };
+    }
+
+    start().catch(console.error);
   </script>
 </body>
 </html>
