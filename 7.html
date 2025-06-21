@@ -5,40 +5,64 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>猫咪识别</title>
   <style>
-    body {
+    html, body {
       margin: 0;
-      background: black;
+      padding: 0;
+      background-color: black;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       color: white;
       font-family: sans-serif;
     }
-    video, canvas {
-      max-width: 100%;
+
+    video {
+      max-height: 80vh;
+      object-fit: contain;
       border: 1px solid white;
     }
+
     #result {
       margin-top: 10px;
       font-size: 1.2em;
-      visibility: hidden; /* 默认隐藏 */
+      visibility: hidden;
     }
   </style>
 </head>
 <body>
 
-<video id="video" autoplay playsinline width="300"></video>
-<canvas id="canvas" style="display:none;"></canvas>
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas" style="display: none;"></canvas>
 <div id="result"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
 
 <script>
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
   async function setupCamera() {
-    const video = document.getElementById('video');
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const video = document.getElementById("video");
+    let stream;
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: isMobileDevice() ? { ideal: "environment" } : "user"
+        },
+        audio: false
+      });
+    } catch (err) {
+      console.warn("摄像头配置失败，使用默认摄像头", err);
+      stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    }
+
     video.srcObject = stream;
     return new Promise(resolve => {
       video.onloadedmetadata = () => resolve(video);
@@ -47,9 +71,9 @@
 
   async function recognizeCat() {
     const video = await setupCamera();
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const resultEl = document.getElementById('result');
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const resultEl = document.getElementById("result");
     const model = await mobilenet.load();
 
     canvas.width = video.videoWidth;
