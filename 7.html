@@ -1,104 +1,97 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>猫咪识别</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>猫咪检测</title>
   <style>
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
       background-color: black;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
+      height: 100vh;
+      overflow: hidden;
       color: white;
       font-family: sans-serif;
     }
-
-    video {
-      max-height: 80vh;
-      border: 1px solid white;
-      object-fit: contain;
+    #wrapper {
+      position: relative;
     }
-
-    #result {
-      margin-top: 10px;
-      font-size: 1.2em;
-      visibility: hidden;
+    video, canvas {
+      width: 640px;
+      height: 480px;
+      border-radius: 8px;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
-    <div id="result"></div>
-<video id="video" autoplay playsinline></video>
-<canvas id="canvas" style="display:none;"></canvas>
 
+<div id="wrapper">
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="canvas"></canvas>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+<!-- 加载 TensorFlow.js 和 COCO-SSD 模型 -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
 
 <script>
-  function isMobileDevice() {
-    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  }
-
   async function setupCamera() {
     const video = document.getElementById("video");
-    let stream;
-
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: isMobileDevice() ? { ideal: "environment" } : "user"
-        },
-        audio: false
-      });
-    } catch (err) {
-      console.warn("摄像头配置失败，尝试使用默认摄像头", err);
-      stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    }
-
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
     return new Promise(resolve => {
       video.onloadedmetadata = () => resolve(video);
     });
   }
 
-  async function recognizeCat() {
+  async function detectCat() {
     const video = await setupCamera();
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    const resultEl = document.getElementById("result");
-
-    const model = await mobilenet.load();
+    const model = await cocoSsd.load();
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    async function detect() {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const predictions = await model.classify(canvas);
-      const top = predictions[0];
+    async function detectFrame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const predictions = await model.detect(video);
 
-      if (top && top.className.toLowerCase().includes("cat")) {
-        resultEl.style.visibility = "visible";
-        resultEl.innerText = `🐱 猫咪: ${top.className} (${Math.round(top.probability * 100)}%)`;
-      } else {
-        resultEl.style.visibility = "hidden";
-        resultEl.innerText = "";
-      }
+      predictions.forEach(pred => {
+        if (pred.class === "cat" && pred.score > 0.5) { // 提高置信度要求
+          const [x, y, width, height] = pred.bbox;
 
-      requestAnimationFrame(detect);
+          // 画边框
+          ctx.strokeStyle = "#00FF00"
+          ctx.lineWidth = 3;
+          ctx.strokeRect(x, y, width, height);
+
+          // 在框中心写字
+          const label = `猫咪： ${(pred.score * 100).toFixed(1)}%`;
+          ctx.font = "18px sans-serif";
+          ctx.fillStyle = "#00FF00"
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(label, x + width / 2, y + height / 2);
+        }
+      });
+
+      requestAnimationFrame(detectFrame); // 实时更新
     }
 
-    detect();
+    detectFrame();
   }
 
-  recognizeCat();
+  detectCat();
 </script>
 
 </body>
