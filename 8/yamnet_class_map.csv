@@ -1,522 +1,522 @@
 index,mid,display_name
-0,/m/09x0r,Speech
-1,/m/0ytgt,"Child speech, kid speaking"
-2,/m/01h8n0,Conversation
-3,/m/02qldy,"Narration, monologue"
-4,/m/0261r1,Babbling
-5,/m/0brhx,Speech synthesizer
-6,/m/07p6fty,Shout
-7,/m/07q4ntr,Bellow
-8,/m/07rwj3x,Whoop
-9,/m/07sr1lc,Yell
-10,/t/dd00135,Children shouting
-11,/m/03qc9zr,Screaming
-12,/m/02rtxlg,Whispering
-13,/m/01j3sz,Laughter
-14,/t/dd00001,Baby laughter
-15,/m/07r660_,Giggle
-16,/m/07s04w4,Snicker
-17,/m/07sq110,Belly laugh
-18,/m/07rgt08,"Chuckle, chortle"
-19,/m/0463cq4,"Crying, sobbing"
-20,/t/dd00002,"Baby cry, infant cry"
-21,/m/07qz6j3,Whimper
-22,/m/07qw_06,"Wail, moan"
-23,/m/07plz5l,Sigh
-24,/m/015lz1,Singing
-25,/m/0l14jd,Choir
-26,/m/01swy6,Yodeling
-27,/m/02bk07,Chant
-28,/m/01c194,Mantra
-29,/t/dd00005,Child singing
-30,/t/dd00006,Synthetic singing
-31,/m/06bxc,Rapping
-32,/m/02fxyj,Humming
-33,/m/07s2xch,Groan
-34,/m/07r4k75,Grunt
-35,/m/01w250,Whistling
-36,/m/0lyf6,Breathing
-37,/m/07mzm6,Wheeze
-38,/m/01d3sd,Snoring
-39,/m/07s0dtb,Gasp
-40,/m/07pyy8b,Pant
-41,/m/07q0yl5,Snort
-42,/m/01b_21,Cough
-43,/m/0dl9sf8,Throat clearing
-44,/m/01hsr_,Sneeze
-45,/m/07ppn3j,Sniff
-46,/m/06h7j,Run
-47,/m/07qv_x_,Shuffle
-48,/m/07pbtc8,"Walk, footsteps"
-49,/m/03cczk,"Chewing, mastication"
-50,/m/07pdhp0,Biting
-51,/m/0939n_,Gargling
-52,/m/01g90h,Stomach rumble
-53,/m/03q5_w,"Burping, eructation"
-54,/m/02p3nc,Hiccup
-55,/m/02_nn,Fart
-56,/m/0k65p,Hands
-57,/m/025_jnm,Finger snapping
-58,/m/0l15bq,Clapping
-59,/m/01jg02,"Heart sounds, heartbeat"
-60,/m/01jg1z,Heart murmur
-61,/m/053hz1,Cheering
-62,/m/028ght,Applause
-63,/m/07rkbfh,Chatter
-64,/m/03qtwd,Crowd
-65,/m/07qfr4h,"Hubbub, speech noise, speech babble"
-66,/t/dd00013,Children playing
-67,/m/0jbk,Animal
-68,/m/068hy,"Domestic animals, pets"
-69,/m/0bt9lr,Dog
-70,/m/05tny_,Bark
-71,/m/07r_k2n,Yip
-72,/m/07qf0zm,Howl
-73,/m/07rc7d9,Bow-wow
-74,/m/0ghcn6,Growling
-75,/t/dd00136,Whimper (dog)
-76,/m/01yrx,Cat
-77,/m/02yds9,Purr
-78,/m/07qrkrw,Meow
-79,/m/07rjwbb,Hiss
-80,/m/07r81j2,Caterwaul
-81,/m/0ch8v,"Livestock, farm animals, working animals"
-82,/m/03k3r,Horse
-83,/m/07rv9rh,Clip-clop
-84,/m/07q5rw0,"Neigh, whinny"
-85,/m/01xq0k1,"Cattle, bovinae"
-86,/m/07rpkh9,Moo
-87,/m/0239kh,Cowbell
-88,/m/068zj,Pig
-89,/t/dd00018,Oink
-90,/m/03fwl,Goat
-91,/m/07q0h5t,Bleat
-92,/m/07bgp,Sheep
-93,/m/025rv6n,Fowl
-94,/m/09b5t,"Chicken, rooster"
-95,/m/07st89h,Cluck
-96,/m/07qn5dc,"Crowing, cock-a-doodle-doo"
-97,/m/01rd7k,Turkey
-98,/m/07svc2k,Gobble
-99,/m/09ddx,Duck
-100,/m/07qdb04,Quack
-101,/m/0dbvp,Goose
-102,/m/07qwf61,Honk
-103,/m/01280g,Wild animals
-104,/m/0cdnk,"Roaring cats (lions, tigers)"
-105,/m/04cvmfc,Roar
-106,/m/015p6,Bird
-107,/m/020bb7,"Bird vocalization, bird call, bird song"
-108,/m/07pggtn,"Chirp, tweet"
-109,/m/07sx8x_,Squawk
-110,/m/0h0rv,"Pigeon, dove"
-111,/m/07r_25d,Coo
-112,/m/04s8yn,Crow
-113,/m/07r5c2p,Caw
-114,/m/09d5_,Owl
-115,/m/07r_80w,Hoot
-116,/m/05_wcq,"Bird flight, flapping wings"
-117,/m/01z5f,"Canidae, dogs, wolves"
-118,/m/06hps,"Rodents, rats, mice"
-119,/m/04rmv,Mouse
-120,/m/07r4gkf,Patter
-121,/m/03vt0,Insect
-122,/m/09xqv,Cricket
-123,/m/09f96,Mosquito
-124,/m/0h2mp,"Fly, housefly"
-125,/m/07pjwq1,Buzz
-126,/m/01h3n,"Bee, wasp, etc."
-127,/m/09ld4,Frog
-128,/m/07st88b,Croak
-129,/m/078jl,Snake
-130,/m/07qn4z3,Rattle
-131,/m/032n05,Whale vocalization
-132,/m/04rlf,Music
-133,/m/04szw,Musical instrument
-134,/m/0fx80y,Plucked string instrument
-135,/m/0342h,Guitar
-136,/m/02sgy,Electric guitar
-137,/m/018vs,Bass guitar
-138,/m/042v_gx,Acoustic guitar
-139,/m/06w87,"Steel guitar, slide guitar"
-140,/m/01glhc,Tapping (guitar technique)
-141,/m/07s0s5r,Strum
-142,/m/018j2,Banjo
-143,/m/0jtg0,Sitar
-144,/m/04rzd,Mandolin
-145,/m/01bns_,Zither
-146,/m/07xzm,Ukulele
-147,/m/05148p4,Keyboard (musical)
-148,/m/05r5c,Piano
-149,/m/01s0ps,Electric piano
-150,/m/013y1f,Organ
-151,/m/03xq_f,Electronic organ
-152,/m/03gvt,Hammond organ
-153,/m/0l14qv,Synthesizer
-154,/m/01v1d8,Sampler
-155,/m/03q5t,Harpsichord
-156,/m/0l14md,Percussion
-157,/m/02hnl,Drum kit
-158,/m/0cfdd,Drum machine
-159,/m/026t6,Drum
-160,/m/06rvn,Snare drum
-161,/m/03t3fj,Rimshot
-162,/m/02k_mr,Drum roll
-163,/m/0bm02,Bass drum
-164,/m/011k_j,Timpani
-165,/m/01p970,Tabla
-166,/m/01qbl,Cymbal
-167,/m/03qtq,Hi-hat
-168,/m/01sm1g,Wood block
-169,/m/07brj,Tambourine
-170,/m/05r5wn,Rattle (instrument)
-171,/m/0xzly,Maraca
-172,/m/0mbct,Gong
-173,/m/016622,Tubular bells
-174,/m/0j45pbj,Mallet percussion
-175,/m/0dwsp,"Marimba, xylophone"
-176,/m/0dwtp,Glockenspiel
-177,/m/0dwt5,Vibraphone
-178,/m/0l156b,Steelpan
-179,/m/05pd6,Orchestra
-180,/m/01kcd,Brass instrument
-181,/m/0319l,French horn
-182,/m/07gql,Trumpet
-183,/m/07c6l,Trombone
-184,/m/0l14_3,Bowed string instrument
-185,/m/02qmj0d,String section
-186,/m/07y_7,"Violin, fiddle"
-187,/m/0d8_n,Pizzicato
-188,/m/01xqw,Cello
-189,/m/02fsn,Double bass
-190,/m/085jw,"Wind instrument, woodwind instrument"
-191,/m/0l14j_,Flute
-192,/m/06ncr,Saxophone
-193,/m/01wy6,Clarinet
-194,/m/03m5k,Harp
-195,/m/0395lw,Bell
-196,/m/03w41f,Church bell
-197,/m/027m70_,Jingle bell
-198,/m/0gy1t2s,Bicycle bell
-199,/m/07n_g,Tuning fork
-200,/m/0f8s22,Chime
-201,/m/026fgl,Wind chime
-202,/m/0150b9,Change ringing (campanology)
-203,/m/03qjg,Harmonica
-204,/m/0mkg,Accordion
-205,/m/0192l,Bagpipes
-206,/m/02bxd,Didgeridoo
-207,/m/0l14l2,Shofar
-208,/m/07kc_,Theremin
-209,/m/0l14t7,Singing bowl
-210,/m/01hgjl,Scratching (performance technique)
-211,/m/064t9,Pop music
-212,/m/0glt670,Hip hop music
-213,/m/02cz_7,Beatboxing
-214,/m/06by7,Rock music
-215,/m/03lty,Heavy metal
-216,/m/05r6t,Punk rock
-217,/m/0dls3,Grunge
-218,/m/0dl5d,Progressive rock
-219,/m/07sbbz2,Rock and roll
-220,/m/05w3f,Psychedelic rock
-221,/m/06j6l,Rhythm and blues
-222,/m/0gywn,Soul music
-223,/m/06cqb,Reggae
-224,/m/01lyv,Country
-225,/m/015y_n,Swing music
-226,/m/0gg8l,Bluegrass
-227,/m/02x8m,Funk
-228,/m/02w4v,Folk music
-229,/m/06j64v,Middle Eastern music
-230,/m/03_d0,Jazz
-231,/m/026z9,Disco
-232,/m/0ggq0m,Classical music
-233,/m/05lls,Opera
-234,/m/02lkt,Electronic music
-235,/m/03mb9,House music
-236,/m/07gxw,Techno
-237,/m/07s72n,Dubstep
-238,/m/0283d,Drum and bass
-239,/m/0m0jc,Electronica
-240,/m/08cyft,Electronic dance music
-241,/m/0fd3y,Ambient music
-242,/m/07lnk,Trance music
-243,/m/0g293,Music of Latin America
-244,/m/0ln16,Salsa music
-245,/m/0326g,Flamenco
-246,/m/0155w,Blues
-247,/m/05fw6t,Music for children
-248,/m/02v2lh,New-age music
-249,/m/0y4f8,Vocal music
-250,/m/0z9c,A capella
-251,/m/0164x2,Music of Africa
-252,/m/0145m,Afrobeat
-253,/m/02mscn,Christian music
-254,/m/016cjb,Gospel music
-255,/m/028sqc,Music of Asia
-256,/m/015vgc,Carnatic music
-257,/m/0dq0md,Music of Bollywood
-258,/m/06rqw,Ska
-259,/m/02p0sh1,Traditional music
-260,/m/05rwpb,Independent music
-261,/m/074ft,Song
-262,/m/025td0t,Background music
-263,/m/02cjck,Theme music
-264,/m/03r5q_,Jingle (music)
-265,/m/0l14gg,Soundtrack music
-266,/m/07pkxdp,Lullaby
-267,/m/01z7dr,Video game music
-268,/m/0140xf,Christmas music
-269,/m/0ggx5q,Dance music
-270,/m/04wptg,Wedding music
-271,/t/dd00031,Happy music
-272,/t/dd00033,Sad music
-273,/t/dd00034,Tender music
-274,/t/dd00035,Exciting music
-275,/t/dd00036,Angry music
-276,/t/dd00037,Scary music
-277,/m/03m9d0z,Wind
-278,/m/09t49,Rustling leaves
-279,/t/dd00092,Wind noise (microphone)
-280,/m/0jb2l,Thunderstorm
-281,/m/0ngt1,Thunder
-282,/m/0838f,Water
-283,/m/06mb1,Rain
-284,/m/07r10fb,Raindrop
-285,/t/dd00038,Rain on surface
-286,/m/0j6m2,Stream
-287,/m/0j2kx,Waterfall
-288,/m/05kq4,Ocean
-289,/m/034srq,"Waves, surf"
-290,/m/06wzb,Steam
-291,/m/07swgks,Gurgling
-292,/m/02_41,Fire
-293,/m/07pzfmf,Crackle
-294,/m/07yv9,Vehicle
-295,/m/019jd,"Boat, Water vehicle"
-296,/m/0hsrw,"Sailboat, sailing ship"
-297,/m/056ks2,"Rowboat, canoe, kayak"
-298,/m/02rlv9,"Motorboat, speedboat"
-299,/m/06q74,Ship
-300,/m/012f08,Motor vehicle (road)
-301,/m/0k4j,Car
-302,/m/0912c9,"Vehicle horn, car horn, honking"
-303,/m/07qv_d5,Toot
-304,/m/02mfyn,Car alarm
-305,/m/04gxbd,"Power windows, electric windows"
-306,/m/07rknqz,Skidding
-307,/m/0h9mv,Tire squeal
-308,/t/dd00134,Car passing by
-309,/m/0ltv,"Race car, auto racing"
-310,/m/07r04,Truck
-311,/m/0gvgw0,Air brake
-312,/m/05x_td,"Air horn, truck horn"
-313,/m/02rhddq,Reversing beeps
-314,/m/03cl9h,"Ice cream truck, ice cream van"
-315,/m/01bjv,Bus
-316,/m/03j1ly,Emergency vehicle
-317,/m/04qvtq,Police car (siren)
-318,/m/012n7d,Ambulance (siren)
-319,/m/012ndj,"Fire engine, fire truck (siren)"
-320,/m/04_sv,Motorcycle
-321,/m/0btp2,"Traffic noise, roadway noise"
-322,/m/06d_3,Rail transport
-323,/m/07jdr,Train
-324,/m/04zmvq,Train whistle
-325,/m/0284vy3,Train horn
-326,/m/01g50p,"Railroad car, train wagon"
-327,/t/dd00048,Train wheels squealing
-328,/m/0195fx,"Subway, metro, underground"
-329,/m/0k5j,Aircraft
-330,/m/014yck,Aircraft engine
-331,/m/04229,Jet engine
-332,/m/02l6bg,"Propeller, airscrew"
-333,/m/09ct_,Helicopter
-334,/m/0cmf2,"Fixed-wing aircraft, airplane"
-335,/m/0199g,Bicycle
-336,/m/06_fw,Skateboard
-337,/m/02mk9,Engine
-338,/t/dd00065,Light engine (high frequency)
-339,/m/08j51y,"Dental drill, dentist's drill"
-340,/m/01yg9g,Lawn mower
-341,/m/01j4z9,Chainsaw
-342,/t/dd00066,Medium engine (mid frequency)
-343,/t/dd00067,Heavy engine (low frequency)
-344,/m/01h82_,Engine knocking
-345,/t/dd00130,Engine starting
-346,/m/07pb8fc,Idling
-347,/m/07q2z82,"Accelerating, revving, vroom"
-348,/m/02dgv,Door
-349,/m/03wwcy,Doorbell
-350,/m/07r67yg,Ding-dong
-351,/m/02y_763,Sliding door
-352,/m/07rjzl8,Slam
-353,/m/07r4wb8,Knock
-354,/m/07qcpgn,Tap
-355,/m/07q6cd_,Squeak
-356,/m/0642b4,Cupboard open or close
-357,/m/0fqfqc,Drawer open or close
-358,/m/04brg2,"Dishes, pots, and pans"
-359,/m/023pjk,"Cutlery, silverware"
-360,/m/07pn_8q,Chopping (food)
-361,/m/0dxrf,Frying (food)
-362,/m/0fx9l,Microwave oven
-363,/m/02pjr4,Blender
-364,/m/02jz0l,"Water tap, faucet"
-365,/m/0130jx,Sink (filling or washing)
-366,/m/03dnzn,Bathtub (filling or washing)
-367,/m/03wvsk,Hair dryer
-368,/m/01jt3m,Toilet flush
-369,/m/012xff,Toothbrush
-370,/m/04fgwm,Electric toothbrush
-371,/m/0d31p,Vacuum cleaner
-372,/m/01s0vc,Zipper (clothing)
-373,/m/03v3yw,Keys jangling
-374,/m/0242l,Coin (dropping)
-375,/m/01lsmm,Scissors
-376,/m/02g901,"Electric shaver, electric razor"
-377,/m/05rj2,Shuffling cards
-378,/m/0316dw,Typing
-379,/m/0c2wf,Typewriter
-380,/m/01m2v,Computer keyboard
-381,/m/081rb,Writing
-382,/m/07pp_mv,Alarm
-383,/m/07cx4,Telephone
-384,/m/07pp8cl,Telephone bell ringing
-385,/m/01hnzm,Ringtone
-386,/m/02c8p,"Telephone dialing, DTMF"
-387,/m/015jpf,Dial tone
-388,/m/01z47d,Busy signal
-389,/m/046dlr,Alarm clock
-390,/m/03kmc9,Siren
-391,/m/0dgbq,Civil defense siren
-392,/m/030rvx,Buzzer
-393,/m/01y3hg,"Smoke detector, smoke alarm"
-394,/m/0c3f7m,Fire alarm
-395,/m/04fq5q,Foghorn
-396,/m/0l156k,Whistle
-397,/m/06hck5,Steam whistle
-398,/t/dd00077,Mechanisms
-399,/m/02bm9n,"Ratchet, pawl"
-400,/m/01x3z,Clock
-401,/m/07qjznt,Tick
-402,/m/07qjznl,Tick-tock
-403,/m/0l7xg,Gears
-404,/m/05zc1,Pulleys
-405,/m/0llzx,Sewing machine
-406,/m/02x984l,Mechanical fan
-407,/m/025wky1,Air conditioning
-408,/m/024dl,Cash register
-409,/m/01m4t,Printer
-410,/m/0dv5r,Camera
-411,/m/07bjf,Single-lens reflex camera
-412,/m/07k1x,Tools
-413,/m/03l9g,Hammer
-414,/m/03p19w,Jackhammer
-415,/m/01b82r,Sawing
-416,/m/02p01q,Filing (rasp)
-417,/m/023vsd,Sanding
-418,/m/0_ksk,Power tool
-419,/m/01d380,Drill
-420,/m/014zdl,Explosion
-421,/m/032s66,"Gunshot, gunfire"
-422,/m/04zjc,Machine gun
-423,/m/02z32qm,Fusillade
-424,/m/0_1c,Artillery fire
-425,/m/073cg4,Cap gun
-426,/m/0g6b5,Fireworks
-427,/g/122z_qxw,Firecracker
-428,/m/07qsvvw,"Burst, pop"
-429,/m/07pxg6y,Eruption
-430,/m/07qqyl4,Boom
-431,/m/083vt,Wood
-432,/m/07pczhz,Chop
-433,/m/07pl1bw,Splinter
-434,/m/07qs1cx,Crack
-435,/m/039jq,Glass
-436,/m/07q7njn,"Chink, clink"
-437,/m/07rn7sz,Shatter
-438,/m/04k94,Liquid
-439,/m/07rrlb6,"Splash, splatter"
-440,/m/07p6mqd,Slosh
-441,/m/07qlwh6,Squish
-442,/m/07r5v4s,Drip
-443,/m/07prgkl,Pour
-444,/m/07pqc89,"Trickle, dribble"
-445,/t/dd00088,Gush
-446,/m/07p7b8y,Fill (with liquid)
-447,/m/07qlf79,Spray
-448,/m/07ptzwd,Pump (liquid)
-449,/m/07ptfmf,Stir
-450,/m/0dv3j,Boiling
-451,/m/0790c,Sonar
-452,/m/0dl83,Arrow
-453,/m/07rqsjt,"Whoosh, swoosh, swish"
-454,/m/07qnq_y,"Thump, thud"
-455,/m/07rrh0c,Thunk
-456,/m/0b_fwt,Electronic tuner
-457,/m/02rr_,Effects unit
-458,/m/07m2kt,Chorus effect
-459,/m/018w8,Basketball bounce
-460,/m/07pws3f,Bang
-461,/m/07ryjzk,"Slap, smack"
-462,/m/07rdhzs,"Whack, thwack"
-463,/m/07pjjrj,"Smash, crash"
-464,/m/07pc8lb,Breaking
-465,/m/07pqn27,Bouncing
-466,/m/07rbp7_,Whip
-467,/m/07pyf11,Flap
-468,/m/07qb_dv,Scratch
-469,/m/07qv4k0,Scrape
-470,/m/07pdjhy,Rub
-471,/m/07s8j8t,Roll
-472,/m/07plct2,Crushing
-473,/t/dd00112,"Crumpling, crinkling"
-474,/m/07qcx4z,Tearing
-475,/m/02fs_r,"Beep, bleep"
-476,/m/07qwdck,Ping
-477,/m/07phxs1,Ding
-478,/m/07rv4dm,Clang
-479,/m/07s02z0,Squeal
-480,/m/07qh7jl,Creak
-481,/m/07qwyj0,Rustle
-482,/m/07s34ls,Whir
-483,/m/07qmpdm,Clatter
-484,/m/07p9k1k,Sizzle
-485,/m/07qc9xj,Clicking
-486,/m/07rwm0c,Clickety-clack
-487,/m/07phhsh,Rumble
-488,/m/07qyrcz,Plop
-489,/m/07qfgpx,"Jingle, tinkle"
-490,/m/07rcgpl,Hum
-491,/m/07p78v5,Zing
-492,/t/dd00121,Boing
-493,/m/07s12q4,Crunch
-494,/m/028v0c,Silence
-495,/m/01v_m0,Sine wave
-496,/m/0b9m1,Harmonic
-497,/m/0hdsk,Chirp tone
-498,/m/0c1dj,Sound effect
-499,/m/07pt_g0,Pulse
-500,/t/dd00125,"Inside, small room"
-501,/t/dd00126,"Inside, large room or hall"
-502,/t/dd00127,"Inside, public space"
-503,/t/dd00128,"Outside, urban or manmade"
-504,/t/dd00129,"Outside, rural or natural"
-505,/m/01b9nn,Reverberation
-506,/m/01jnbd,Echo
-507,/m/096m7z,Noise
-508,/m/06_y0by,Environmental noise
-509,/m/07rgkc5,Static
-510,/m/06xkwv,Mains hum
-511,/m/0g12c5,Distortion
-512,/m/08p9q4,Sidetone
-513,/m/07szfh9,Cacophony
-514,/m/0chx_,White noise
-515,/m/0cj0r,Pink noise
-516,/m/07p_0gm,Throbbing
-517,/m/01jwx6,Vibration
-518,/m/07c52,Television
-519,/m/06bz3,Radio
-520,/m/07hvw1,Field recording
+0,/m/09x0r,语音
+1,/m/0ytgt,儿童说话
+2,/m/01h8n0,对话
+3,/m/02qldy,旁白或独白
+4,/m/0261r1,咿呀学语
+5,/m/0brhx,语音合成器
+6,/m/07p6fty,喊叫
+7,/m/07q4ntr,怒吼
+8,/m/07rwj3x,欢呼
+9,/m/07sr1lc,吼叫
+10,/t/dd00135,儿童尖叫
+11,/m/03qc9zr,尖叫
+12,/m/02rtxlg,低语
+13,/m/01j3sz,笑声
+14,/t/dd00001,婴儿笑声
+15,/m/07r660_,咯咯笑
+16,/m/07s04w4,窃笑
+17,/m/07sq110,大笑
+18,/m/07rgt08,轻笑或咯咯笑
+19,/m/0463cq4,哭泣或啜泣
+20,/t/dd00002,婴儿哭声
+21,/m/07qz6j3,呜咽
+22,/m/07qw_06,哀号或呻吟
+23,/m/07plz5l,叹息
+24,/m/015lz1,唱歌
+25,/m/0l14jd,合唱
+26,/m/01swy6,约德尔唱法
+27,/m/02bk07,吟唱
+28,/m/01c194,咒语
+29,/t/dd00005,儿童唱歌
+30,/t/dd00006,合成唱歌
+31,/m/06bxc,说唱
+32,/m/02fxyj,哼唱
+33,/m/07s2xch,呻吟
+34,/m/07r4k75,咕哝
+35,/m/01w250,吹口哨
+36,/m/0lyf6,呼吸
+37,/m/07mzm6,喘息
+38,/m/01d3sd,打鼾
+39,/m/07s0dtb,喘气
+40,/m/07pyy8b,喘息（剧烈）
+41,/m/07q0yl5,喷鼻
+42,/m/01b_21,咳嗽
+43,/m/0dl9sf8,清嗓子
+44,/m/01hsr_,打喷嚏
+45,/m/07ppn3j,抽鼻子
+46,/m/06h7j,奔跑
+47,/m/07qv_x_,拖步
+48,/m/07pbtc8,走路脚步声
+49,/m/03cczk,咀嚼
+50,/m/07pdhp0,咬
+51,/m/0939n_,漱口
+52,/m/01g90h,肚子咕咕叫
+53,/m/03q5_w,打嗝或嗳气
+54,/m/02p3nc,打嗝
+55,/m/02_nn,放屁
+56,/m/0k65p,手部动作
+57,/m/025_jnm,打响指
+58,/m/0l15bq,鼓掌
+59,/m/01jg02,心跳声
+60,/m/01jg1z,心脏杂音
+61,/m/053hz1,欢呼
+62,/m/028ght,掌声
+63,/m/07rkbfh,喋喋不休
+64,/m/03qtwd,人群
+65,/m/07qfr4h,嘈杂声或人声噪音
+66,/t/dd00013,儿童玩耍
+67,/m/0jbk,动物
+68,/m/068hy,家养动物或宠物
+69,/m/0bt9lr,狗
+70,/m/05tny_,狗叫声
+71,/m/07r_k2n,狗尖叫
+72,/m/07qf0zm,嚎叫
+73,/m/07rc7d9,汪汪声
+74,/m/0ghcn6,低吼
+75,/t/dd00136,呜咽（狗）
+76,/m/01yrx,猫
+77,/m/02yds9,呼噜声（猫）
+78,/m/07qrkrw,喵喵叫
+79,/m/07rjwbb,嘶嘶声
+80,/m/07r81j2,尖厉叫声（猫发情叫）
+81,/m/0ch8v,家畜或工作动物
+82,/m/03k3r,马
+83,/m/07rv9rh,马蹄声
+84,/m/07q5rw0,嘶鸣
+85,/m/01xq0k1,牛类动物
+86,/m/07rpkh9,哞哞声
+87,/m/0239kh,牛铃
+88,/m/068zj,猪
+89,/t/dd00018,哼哼声（猪叫）
+90,/m/03fwl,山羊
+91,/m/07q0h5t,咩咩叫
+92,/m/07bgp,绵羊
+93,/m/025rv6n,家禽
+94,/m/09b5t,鸡或公鸡
+95,/m/07st89h,咯咯叫
+96,/m/07qn5dc,啼叫或喔喔啼
+97,/m/01rd7k,火鸡
+98,/m/07svc2k,咯咯叫（火鸡）
+99,/m/09ddx,鸭
+100,/m/07qdb04,呱呱叫（鸭叫）
+101,/m/0dbvp,鹅
+102,/m/07qwf61,鸣叫（鹅叫声）
+103,/m/01280g,野生动物
+104,/m/0cdnk,猛兽咆哮（狮子、老虎）
+105,/m/04cvmfc,咆哮
+106,/m/015p6,鸟
+107,/m/020bb7,鸟鸣或叫声
+108,/m/07pggtn,啁啾或叽叽叫
+109,/m/07sx8x_,尖叫（鸟）
+110,/m/0h0rv,鸽子或斑鸠
+111,/m/07r_25d,咕咕叫
+112,/m/04s8yn,乌鸦
+113,/m/07r5c2p,哇哇叫（乌鸦叫）
+114,/m/09d5_,猫头鹰
+115,/m/07r_80w,猫头鹰叫声
+116,/m/05_wcq,鸟类飞行或拍翅声
+117,/m/01z5f,犬科动物（狗、狼）
+118,/m/06hps,啮齿类（老鼠、鼠类）
+119,/m/04rmv,老鼠
+120,/m/07r4gkf,嗒嗒声（轻快脚步）
+121,/m/03vt0,昆虫
+122,/m/09xqv,蟋蟀
+123,/m/09f96,蚊子
+124,/m/0h2mp,苍蝇
+125,/m/07pjwq1,嗡嗡声
+126,/m/01h3n,蜜蜂或黄蜂等
+127,/m/09ld4,青蛙
+128,/m/07st88b,呱呱叫（青蛙叫）
+129,/m/078jl,蛇
+130,/m/07qn4z3,响尾声
+131,/m/032n05,鲸叫
+132,/m/04rlf,音乐
+133,/m/04szw,乐器
+134,/m/0fx80y,弹拨乐器
+135,/m/0342h,吉他
+136,/m/02sgy,电吉他
+137,/m/018vs,贝斯吉他
+138,/m/042v_gx,原声吉他
+139,/m/06w87,钢棒吉他或滑音吉他
+140,/m/01glhc,敲击技巧（吉他技法）
+141,/m/07s0s5r,扫弦
+142,/m/018j2,班卓琴
+143,/m/0jtg0,锡塔琴
+144,/m/04rzd,曼陀林
+145,/m/01bns_,筝
+146,/m/07xzm,尤克里里
+147,/m/05148p4,键盘乐器
+148,/m/05r5c,钢琴
+149,/m/01s0ps,电子钢琴
+150,/m/013y1f,风琴
+151,/m/03xq_f,电子风琴
+152,/m/03gvt,哈蒙德风琴
+153,/m/0l14qv,合成器
+154,/m/01v1d8,采样器
+155,/m/03q5t,大键琴
+156,/m/0l14md,打击乐器
+157,/m/02hnl,架子鼓
+158,/m/0cfdd,鼓机
+159,/m/026t6,鼓
+160,/m/06rvn,小军鼓
+161,/m/03t3fj,鼓边敲击
+162,/m/02k_mr,滚奏
+163,/m/0bm02,低音鼓
+164,/m/011k_j,定音鼓
+165,/m/01p970,塔布拉鼓
+166,/m/01qbl,钹
+167,/m/03qtq,踩镲
+168,/m/01sm1g,木鱼
+169,/m/07brj,铃鼓
+170,/m/05r5wn,拨浪鼓
+171,/m/0xzly,沙锤
+172,/m/0mbct,锣
+173,/m/016622,管钟
+174,/m/0j45pbj,击槌类打击乐器
+175,/m/0dwsp,马林巴琴或木琴
+176,/m/0dwtp,钟琴
+177,/m/0dwt5,颤音琴
+178,/m/0l156b,钢鼓
+179,/m/05pd6,管弦乐团
+180,/m/01kcd,铜管乐器
+181,/m/0319l,圆号
+182,/m/07gql,小号
+183,/m/07c6l,长号
+184,/m/0l14_3,拉弦乐器
+185,/m/02qmj0d,弦乐组
+186,/m/07y_7,小提琴或民谣提琴
+187,/m/0d8_n,拨奏
+188,/m/01xqw,大提琴
+189,/m/02fsn,低音提琴
+190,/m/085jw,木管乐器或管乐器
+191,/m/0l14j_,长笛
+192,/m/06ncr,萨克斯风
+193,/m/01wy6,单簧管
+194,/m/03m5k,竖琴
+195,/m/0395lw,铃
+196,/m/03w41f,教堂钟
+197,/m/027m70_,铃铛
+198,/m/0gy1t2s,自行车铃
+199,/m/07n_g,音叉
+200,/m/0f8s22,编钟或风铃
+201,/m/026fgl,风铃
+202,/m/0150b9,钟声变奏（钟乐学）
+203,/m/03qjg,口琴
+204,/m/0mkg,手风琴
+205,/m/0192l,风笛
+206,/m/02bxd,迪吉里杜管
+207,/m/0l14l2,羊角号（Shofar）
+208,/m/07kc_,特雷门琴
+209,/m/0l14t7,颂钵
+210,/m/01hgjl,刮碟（DJ技巧）
+211,/m/064t9,流行音乐
+212,/m/0glt670,嘻哈音乐
+213,/m/02cz_7,口技
+214,/m/06by7,摇滚音乐
+215,/m/03lty,重金属
+216,/m/05r6t,朋克摇滚
+217,/m/0dls3,垃圾摇滚（Grunge）
+218,/m/0dl5d,前卫摇滚
+219,/m/07sbbz2,摇滚乐（早期摇滚）
+220,/m/05w3f,迷幻摇滚
+221,/m/06j6l,节奏蓝调（R&B）
+222,/m/0gywn,灵魂乐
+223,/m/06cqb,雷鬼音乐
+224,/m/01lyv,乡村音乐
+225,/m/015y_n,摇摆音乐
+226,/m/0gg8l,蓝草音乐
+227,/m/02x8m,放克
+228,/m/02w4v,民谣音乐
+229,/m/06j64v,中东音乐
+230,/m/03_d0,爵士乐
+231,/m/026z9,迪斯科
+232,/m/0ggq0m,古典音乐
+233,/m/05lls,歌剧
+234,/m/02lkt,电子音乐
+235,/m/03mb9,浩室音乐（House）
+236,/m/07gxw,电子舞曲（Techno）
+237,/m/07s72n,低音节拍（Dubstep）
+238,/m/0283d,鼓打贝斯（Drum and Bass）
+239,/m/0m0jc,电子流行（Electronica）
+240,/m/08cyft,电子舞曲（EDM）
+241,/m/0fd3y,环境音乐
+242,/m/07lnk,迷幻舞曲（Trance）
+243,/m/0g293,拉丁美洲音乐
+244,/m/0ln16,萨尔萨音乐
+245,/m/0326g,弗拉明戈
+246,/m/0155w,布鲁斯
+247,/m/05fw6t,儿童音乐
+248,/m/02v2lh,新世纪音乐
+249,/m/0y4f8,声乐
+250,/m/0z9c,无伴奏合唱（A cappella）
+251,/m/0164x2,非洲音乐
+252,/m/0145m,非洲节奏（Afrobeat）
+253,/m/02mscn,基督教音乐
+254,/m/016cjb,福音音乐
+255,/m/028sqc,亚洲音乐
+256,/m/015vgc,卡纳提克音乐（南印度古典）
+257,/m/0dq0md,宝莱坞音乐
+258,/m/06rqw,斯卡音乐
+259,/m/02p0sh1,传统音乐
+260,/m/05rwpb,独立音乐
+261,/m/074ft,歌曲
+262,/m/025td0t,背景音乐
+263,/m/02cjck,主题音乐
+264,/m/03r5q_,广告铃声
+265,/m/0l14gg,电影原声
+266,/m/07pkxdp,摇篮曲
+267,/m/01z7dr,电子游戏音乐
+268,/m/0140xf,圣诞音乐
+269,/m/0ggx5q,舞曲
+270,/m/04wptg,婚礼音乐
+271,/t/dd00031,欢乐音乐
+272,/t/dd00033,悲伤音乐
+273,/t/dd00034,温柔音乐
+274,/t/dd00035,激动音乐
+275,/t/dd00036,愤怒音乐
+276,/t/dd00037,恐怖音乐
+277,/m/03m9d0z,风
+278,/m/09t49,树叶沙沙声
+279,/t/dd00092,风声（麦克风噪音）
+280,/m/0jb2l,雷雨
+281,/m/0ngt1,雷声
+282,/m/0838f,水
+283,/m/06mb1,下雨
+284,/m/07r10fb,雨滴声
+285,/t/dd00038,雨落在表面声
+286,/m/0j6m2,小溪
+287,/m/0j2kx,瀑布
+288,/m/05kq4,海洋
+289,/m/034srq,海浪
+290,/m/06wzb,蒸汽
+291,/m/07swgks,咕噜声（水流）
+292,/m/02_41,火
+293,/m/07pzfmf,劈啪声（燃烧声）
+294,/m/07yv9,交通工具
+295,/m/019jd,船只或水上交通工具
+296,/m/0hsrw,帆船
+297,/m/056ks2,划艇、独木舟或皮划艇
+298,/m/02rlv9,快艇或摩托艇
+299,/m/06q74,大型船只
+300,/m/012f08,机动车（道路）
+301,/m/0k4j,汽车
+302,/m/0912c9,车喇叭声
+303,/m/07qv_d5,嘟嘟声
+304,/m/02mfyn,汽车警报
+305,/m/04gxbd,电动车窗
+306,/m/07rknqz,打滑声
+307,/m/0h9mv,轮胎尖叫声
+308,/t/dd00134,汽车经过声
+309,/m/0ltv,赛车
+310,/m/07r04,卡车
+311,/m/0gvgw0,空气刹车
+312,/m/05x_td,卡车喇叭声
+313,/m/02rhddq,倒车蜂鸣声
+314,/m/03cl9h,冰淇淋车
+315,/m/01bjv,公车
+316,/m/03j1ly,紧急车辆
+317,/m/04qvtq,警车（警报声）
+318,/m/012n7d,救护车（警报声）
+319,/m/012ndj,消防车（警报声）
+320,/m/04_sv,摩托车
+321,/m/0btp2,交通噪音
+322,/m/06d_3,铁路运输
+323,/m/07jdr,火车
+324,/m/04zmvq,火车汽笛
+325,/m/0284vy3,火车喇叭
+326,/m/01g50p,列车车厢
+327,/t/dd00048,火车轮声尖啸
+328,/m/0195fx,地铁
+329,/m/0k5j,飞机
+330,/m/014yck,飞机引擎
+331,/m/04229,喷气引擎
+332,/m/02l6bg,螺旋桨
+333,/m/09ct_,直升机
+334,/m/0cmf2,固定翼飞机
+335,/m/0199g,自行车
+336,/m/06_fw,滑板
+337,/m/02mk9,引擎
+338,/t/dd00065,轻型引擎声（高频）
+339,/m/08j51y,牙钻
+340,/m/01yg9g,割草机
+341,/m/01j4z9,电锯
+342,/t/dd00066,中型引擎声（中频）
+343,/t/dd00067,重型引擎声（低频）
+344,/m/01h82_,发动机爆震声
+345,/t/dd00130,发动机启动声
+346,/m/07pb8fc,怠速声
+347,/m/07q2z82,加速声或轰油门声
+348,/m/02dgv,门
+349,/m/03wwcy,门铃
+350,/m/07r67yg,叮咚声
+351,/m/02y_763,滑门
+352,/m/07rjzl8,猛关门声
+353,/m/07r4wb8,敲门声
+354,/m/07qcpgn,轻敲声
+355,/m/07q6cd_,吱吱声
+356,/m/0642b4,橱柜开关声
+357,/m/0fqfqc,抽屉开关声
+358,/m/04brg2,餐具、锅碗瓢盆
+359,/m/023pjk,刀叉勺
+360,/m/07pn_8q,切菜声
+361,/m/0dxrf,油炸声
+362,/m/0fx9l,微波炉
+363,/m/02pjr4,搅拌机
+364,/m/02jz0l,水龙头
+365,/m/0130jx,洗水槽注水或清洗
+366,/m/03dnzn,浴缸注水或清洗
+367,/m/03wvsk,吹风机
+368,/m/01jt3m,马桶冲水声
+369,/m/012xff,牙刷
+370,/m/04fgwm,电动牙刷
+371,/m/0d31p,吸尘器
+372,/m/01s0vc,拉链声（衣物）
+373,/m/03v3yw,钥匙叮当声
+374,/m/0242l,硬币掉落声
+375,/m/01lsmm,剪刀声
+376,/m/02g901,电动剃须刀
+377,/m/05rj2,洗牌声
+378,/m/0316dw,打字声
+379,/m/0c2wf,打字机
+380,/m/01m2v,电脑键盘
+381,/m/081rb,写字声
+382,/m/07pp_mv,警报声
+383,/m/07cx4,电话
+384,/m/07pp8cl,电话铃声
+385,/m/01hnzm,手机铃声
+386,/m/02c8p,拨号音（DTMF音）
+387,/m/015jpf,拨号音（连接前）
+388,/m/01z47d,占线音
+389,/m/046dlr,闹钟
+390,/m/03kmc9,警笛
+391,/m/0dgbq,民防警报
+392,/m/030rvx,蜂鸣器
+393,/m/01y3hg,烟雾探测器
+394,/m/0c3f7m,火警警报
+395,/m/04fq5q,雾号
+396,/m/0l156k,口哨
+397,/m/06hck5,蒸汽哨声
+398,/t/dd00077,机械运作声
+399,/m/02bm9n,棘轮或棘爪声
+400,/m/01x3z,时钟
+401,/m/07qjznt,滴答声
+402,/m/07qjznl,滴答滴答
+403,/m/0l7xg,齿轮
+404,/m/05zc1,滑轮
+405,/m/0llzx,缝纫机
+406,/m/02x984l,机械风扇
+407,/m/025wky1,空调
+408,/m/024dl,收银机
+409,/m/01m4t,打印机
+410,/m/0dv5r,相机
+411,/m/07bjf,单反相机
+412,/m/07k1x,工具
+413,/m/03l9g,锤子
+414,/m/03p19w,气动钻（破碎机）
+415,/m/01b82r,锯木声
+416,/m/02p01q,锉刀打磨
+417,/m/023vsd,打磨声
+418,/m/0_ksk,电动工具
+419,/m/01d380,电钻
+420,/m/014zdl,爆炸
+421,/m/032s66,枪声
+422,/m/04zjc,机关枪
+423,/m/02z32qm,连发射击
+424,/m/0_1c,炮击
+425,/m/073cg4,玩具枪
+426,/m/0g6b5,烟火
+427,/g/122z_qxw,鞭炮
+428,/m/07qsvvw,爆裂声或砰的一声
+429,/m/07pxg6y,喷发
+430,/m/07qqyl4,轰隆声
+431,/m/083vt,木头
+432,/m/07pczhz,劈砍声
+433,/m/07pl1bw,木刺碎裂
+434,/m/07qs1cx,劈裂声
+435,/m/039jq,玻璃
+436,/m/07q7njn,叮当声
+437,/m/07rn7sz,破碎声
+438,/m/04k94,液体
+439,/m/07rrlb6,泼溅声
+440,/m/07p6mqd,晃动水声
+441,/m/07qlwh6,粘稠挤压声
+442,/m/07r5v4s,滴水声
+443,/m/07prgkl,倒水声
+444,/m/07pqc89,涓涓细流
+445,/t/dd00088,涌流声
+446,/m/07p7b8y,注满（液体）
+447,/m/07qlf79,喷雾声
+448,/m/07ptzwd,泵水声
+449,/m/07ptfmf,搅拌声
+450,/m/0dv3j,沸腾声
+451,/m/0790c,声呐
+452,/m/0dl83,箭矢
+453,/m/07rqsjt,呼呼声或刷刷声
+454,/m/07qnq_y,咚咚声
+455,/m/07rrh0c,扑通声
+456,/m/0b_fwt,电子调音器
+457,/m/02rr_,效果器
+458,/m/07m2kt,合唱效果
+459,/m/018w8,篮球弹跳声
+460,/m/07pws3f,砰的一声
+461,/m/07ryjzk,拍打声
+462,/m/07rdhzs,猛击声
+463,/m/07pjjrj,撞碎声或崩塌声
+464,/m/07pc8lb,破裂声
+465,/m/07pqn27,弹跳声
+466,/m/07rbp7_,鞭子声
+467,/m/07pyf11,拍翅声
+468,/m/07qb_dv,抓挠声
+469,/m/07qv4k0,刮擦声
+470,/m/07pdjhy,摩擦声
+471,/m/07s8j8t,滚动声
+472,/m/07plct2,碾碎声
+473,/t/dd00112,揉皱声
+474,/m/07qcx4z,撕裂声
+475,/m/02fs_r,哔哔声
+476,/m/07qwdck,嘀声
+477,/m/07phxs1,叮声
+478,/m/07rv4dm,当啷声
+479,/m/07s02z0,尖叫声（物体）
+480,/m/07qh7jl,嘎吱声
+481,/m/07qwyj0,沙沙声
+482,/m/07s34ls,嗡嗡转动声
+483,/m/07qmpdm,哗啦声
+484,/m/07p9k1k,滋滋声
+485,/m/07qc9xj,点击声
+486,/m/07rwm0c,哒哒声
+487,/m/07phhsh,隆隆声
+488,/m/07qyrcz,扑通落水声
+489,/m/07qfgpx,叮铃声
+490,/m/07rcgpl,嗡嗡声
+491,/m/07p78v5,嗖的一声
+492,/t/dd00121,弹跳声（Boing）
+493,/m/07s12q4,咯吱声
+494,/m/028v0c,寂静
+495,/m/01v_m0,正弦波
+496,/m/0b9m1,谐波
+497,/m/0hdsk,啁啾音
+498,/m/0c1dj,音效
+499,/m/07pt_g0,脉冲声
+500,/t/dd00125,室内，小房间
+501,/t/dd00126,室内，大房间或大厅
+502,/t/dd00127,室内，公共场所
+503,/t/dd00128,室外，城市或人工环境
+504,/t/dd00129,室外，乡村或自然环境
+505,/m/01b9nn,混响
+506,/m/01jnbd,回声
+507,/m/096m7z,噪声
+508,/m/06_y0by,环境噪音
+509,/m/07rgkc5,静电噪声
+510,/m/06xkwv,电源嗡嗡声
+511,/m/0g12c5,失真
+512,/m/08p9q4,侧音
+513,/m/07szfh9,刺耳杂音
+514,/m/0chx_,白噪音
+515,/m/0cj0r,粉红噪音
+516,/m/07p_0gm,悸动声
+517,/m/01jwx6,振动声
+518,/m/07c52,电视
+519,/m/06bz3,广播
+520,/m/07hvw1,实地录音
