@@ -1,64 +1,77 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <title>自动环境音识别</title>
+  <meta charset="UTF-8">
+  <title>YAMNet 环境音识别</title>
   <style>
-    body {
-      background: #111;
-      color: #00ff99;
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    #result {
-      font-size: 1.5em;
-      margin-top: 20px;
-    }
+    body { background: #111; color: #0f0; font-family: sans-serif;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100vh; margin: 0; }
+    #status { font-size: 1.2em; margin-top: 20px; }
   </style>
 </head>
 <body>
+  <h1>侦测中：猫叫、门铃、警报</h1>
+  <div id="status">加载模型中...</div>
 
-<h1>环境声音识别中…</h1>
-<div id="result">等待声音输入...</div>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4"></script>
+  <script>
+    const TARGET_CLASSES = ["Meow", "Doorbell", "Siren"];
+    const THRESHOLD = 0.3;
+    const FRAME_DURATION = 0.96; // 每帧约 0.96 秒
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands"></script>
-<script>
-  async function startRecognition() {
-    const recognizer = speechCommands.create('BROWSER_FFT');
-    await recognizer.ensureModelLoaded();
+    async function init() {
+      const statusEl = document.getElementById('status');
+      statusEl.innerText = '加载 YAMNet 模型...';
 
-    const words = recognizer.wordLabels();
-    const resultEl = document.getElementById('result');
+      const model = await tf.loadGraphModel(
+        'https://storage.googleapis.com/tfjs-models/savedmodel/yamnet/tfjs/model.json'
+      );
 
-    recognizer.listen(result => {
-      const scores = result.scores;
-      const topIndex = scores.indexOf(Math.max(...scores));
-      const label = words[topIndex];
-      const score = scores[topIndex];
-      if (score > 0.75) {
-        resultEl.innerText = `识别结果：${label}（置信度 ${(score * 100).toFixed(1)}%）`;
-      }
-    }, {
-      includeSpectrogram: false,
-      probabilityThreshold: 0.75,
-      invokeCallbackOnNoiseAndUnknown: true,
-      overlapFactor: 0.5
-    });
-  }
+      statusEl.innerText = '初始化音频...';
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioCtx = new AudioContext({ sampleRate: 16000 });
+      const source = audioCtx.createMediaStreamSource(stream);
+      const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+      source.connect(processor);
+      processor.connect(audioCtx.destination);
 
-  // 自动开始识别（需用户允许麦克风权限）
-  window.addEventListener('load', () => {
-    startRecognition().catch(err => {
-      document.getElementById('result').innerText = "启动失败：" + err.message;
-    });
-  });
-</script>
+      statusEl.innerText = '侦测中...';
+      const audioBuffer = [];
 
+      processor.onaudioprocess = async (e) => {
+        audioBuffer.push(...e.inputBuffer.getChannelData(0));
+        const neededSamples = audioCtx.sampleRate * FRAME_DURATION;
+        if (audioBuffer.length >= neededSamples) {
+          const frame = audioBuffer.splice(0, neededSamples);
+          const input = tf.tensor([frame], [1, neededSamples], 'float32');
+          const output = model.predict(input);
+          const scores = await output.array();
+          tf.dispose([input, output]);
+          const meanScores = scores[0];
+
+          let maxScore = -Infinity, maxIdx = -1;
+          TARGET_CLASSES.forEach((cls, idx) => {
+            const clsIndex = outputToIndexMap[cls];
+            if (meanScores[clsIndex] > maxScore) {
+              maxScore = meanScores[clsIndex];
+              maxIdx = clsIndex;
+            }
+          });
+
+          if (maxScore > THRESHOLD) {
+            statusEl.innerText = `${TARGET_CLASSES.map(c=>c)[TARGET_CLASSES.indexOf(Object.keys(outputToIndexMap).filter(k=>outputToIndexMap[k]===maxIdx)[0])]}（${(maxScore*100).toFixed(1)}%）`;
+          }
+        }
+      };
+    }
+
+    // 解析 model.json 中的标签映射（需预加载）
+    let outputToIndexMap = {};
+    fetch('https://storage.googleapis.com/audioset/yamnet_class_map.json')
+      .then(r => r.json())
+      .then(map => { outputToIndexMap = map; init(); })
+      .catch(err => document.getElementById('status').innerText = '加载标签失败:' + err);
+  </script>
 </body>
 </html>
