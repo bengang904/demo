@@ -1,6 +1,6 @@
 {
-    "name": "我的PWA网页",
-    "short_name": "PWA",
+    "name": "多物体检测",
+    "short_name": "多物体检测",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",
