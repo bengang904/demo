@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>我的PWA网页</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <h1>Hello PWA</h1>
+  <button id="installBtn" onclick="installApp()" style="display:none;">添加到主屏幕</button>
+
+  <script>
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById("installBtn").style.display = "block";
+    });
+
+    function installApp() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(choice => {
+          if (choice.outcome === 'accepted') {
+            console.log('用户接受安装');
+          } else {
+            console.log('用户取消安装');
+          }
+          deferredPrompt = null;
+        });
+      }
+    }
+
+    // 注册 Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(() => console.log('Service Worker 注册成功'))
+        .catch(err => console.log('SW 注册失败:', err));
+    }
+  </script>
+</body>
+</html>
