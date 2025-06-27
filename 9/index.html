@@ -2,19 +2,66 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>我的PWA网页</title>
-  <link rel="manifest" href="manifest.json">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0">
+  <title></title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 100px;
+      background: #f0f4f8;
+      display: none; /* 初始隐藏页面 */
+    }
+
+    #installBtn {
+      display: none;
+      padding: 14px 32px;
+      font-size: 18px;
+      color: white;
+      background: linear-gradient(135deg, #408bce 0%, #00d9e4 100%);
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    #installBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+    }
+  </style>
+  <script>
+    // 动态加载 manifest.json
+    fetch('manifest.json')
+      .then(response => {
+        if (!response.ok) throw new Error("Manifest 加载失败");
+        return response.json();
+      })
+      .then(data => {
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = 'manifest.json';
+        document.head.appendChild(link);
+        document.body.style.display = 'block'; // 加载成功后显示页面
+      })
+      .catch(err => {
+        console.error(err);
+        document.body.innerHTML = '<h1>加载失败，请稍后再试。</h1>';
+        document.body.style.display = 'block';
+      });
+  </script>
 </head>
 <body>
-  <h1>Hello PWA</h1>
-  <button id="installBtn" onclick="installApp()" style="display:none;">添加到主屏幕</button>
+  <h1>欢迎使用 PWA 网页</h1>
+  <button id="installBtn" onclick="installApp()">添加到桌面</button>
 
   <script>
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      document.getElementById("installBtn").style.display = "block";
+      document.getElementById("installBtn").style.display = "inline-block";
     });
 
     function installApp() {
@@ -31,11 +78,10 @@
       }
     }
 
-    // 注册 Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js')
-        .then(() => console.log('Service Worker 注册成功'))
-        .catch(err => console.log('SW 注册失败:', err));
+      navigator.serviceWorker.register('sw.js').then(() => {
+        console.log("Service Worker 注册成功");
+      });
     }
   </script>
 </body>
