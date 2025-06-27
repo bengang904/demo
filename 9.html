@@ -2,108 +2,46 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>车牌识别</title>
-  <script src="https://cdn.jsdelivr.net/npm/opencv.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.1/dist/tesseract.min.js"></script>
+  <title>文字识别 OCR</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
   <style>
-    body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f0f0; }
-    video { border: 1px solid black; }
-    canvas { position: absolute; }
-    #result { position: absolute; top: 20px; left: 20px; color: white; font-size: 20px; }
+    body { font-family: sans-serif; text-align: center; padding: 2em; background: #f9f9f9; }
+    canvas, img { max-width: 100%; height: auto; margin: 1em 0; }
+    #output { white-space: pre-wrap; background: #eee; padding: 1em; border-radius: 8px; }
   </style>
 </head>
 <body>
-  <video id="videoElement" width="640" height="480" autoplay></video>
-  <canvas id="canvas" width="640" height="480"></canvas>
-  <div id="result"></div>
+
+  <h1>图片文字识别 OCR</h1>
+  <input type="file" id="imageInput" accept="image/*" />
+  <div><img id="preview" /></div>
+  <div id="output">请上传图片</div>
 
   <script>
-    const videoElement = document.getElementById('videoElement');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const resultElement = document.getElementById('result');
+    const imageInput = document.getElementById("imageInput");
+    const preview = document.getElementById("preview");
+    const output = document.getElementById("output");
 
-    // 获取摄像头视频流
-    async function setupCamera() {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      videoElement.srcObject = stream;
-    }
+    imageInput.addEventListener("change", async () => {
+      const file = imageInput.files[0];
+      if (!file) return;
 
-    // 检测车牌区域并进行OCR识别
-    async function recognizeLicensePlate(imageData) {
-      // 使用Tesseract.js进行OCR识别
-      const result = await Tesseract.recognize(
-        imageData,
-        'eng',
+      const url = URL.createObjectURL(file);
+      preview.src = url;
+      output.textContent = "识别中...";
+
+      // OCR 主体
+      const { data: { text } } = await Tesseract.recognize(
+        url,
+        'chi_sim+eng',  // 中文简体 + 英文
         {
-          logger: (m) => console.log(m),  // 打印OCR日志
+          logger: m => console.log(m), // 可选：用于调试进度
         }
       );
-      if (result.text) {
-        resultElement.innerHTML = `识别的车牌: ${result.text}`;
-      } else {
-        resultElement.innerHTML = '未能识别车牌';
-      }
-    }
 
-    // 处理视频帧进行车牌检测
-    function detectLicensePlate() {
-      ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      
-      // 在这里使用OpenCV进行车牌区域检测
-      // 例如：转换为灰度图，边缘检测，轮廓检测等
-      let mat = cv.matFromImageData(imageData);
-      let gray = new cv.Mat();
-      let edges = new cv.Mat();
-
-      // 转为灰度图像
-      cv.cvtColor(mat, gray, cv.COLOR_RGBA2GRAY);
-      // 使用Canny边缘检测
-      cv.Canny(gray, edges, 50, 100);
-
-      // 获取车牌区域（假设是矩形，您可以根据需求调整方法）
-      let contours = new cv.MatVector();
-      let hierarchy = new cv.Mat();
-      cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-      for (let i = 0; i < contours.size(); i++) {
-        let cnt = contours.get(i);
-        let approx = new cv.Mat();
-        // 近似为多边形
-        cv.approxPolyDP(cnt, approx, 0.02 * cv.arcLength(cnt, true), true);
-
-        // 判断轮廓是否为矩形
-        if (approx.rows === 4) {
-          // 如果是矩形，表示可能是车牌
-          let rect = cv.boundingRect(approx);
-          // 提取车牌区域
-          let plateRegion = mat.roi(rect);
-          
-          // 转换为图片数据并进行OCR识别
-          let plateImageData = cv.matToImageData(plateRegion);
-          recognizeLicensePlate(plateImageData);
-        }
-        approx.delete();
-        cnt.delete();
-      }
-
-      // 清理
-      mat.delete();
-      gray.delete();
-      edges.delete();
-      contours.delete();
-      hierarchy.delete();
-    }
-
-    // 启动摄像头并开始车牌识别
-    setupCamera().then(() => {
-      videoElement.onloadedmetadata = () => {
-        videoElement.play();
-        setInterval(detectLicensePlate, 1000); // 每秒一次
-      };
+      output.textContent = text.trim();
     });
   </script>
+
 </body>
 </html>
