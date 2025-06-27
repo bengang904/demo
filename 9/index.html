@@ -1,88 +1,209 @@
+
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0">
-  <title></title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>多物体检测</title>
+  <link rel="manifest" href="manifest.json">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding-top: 100px;
-      background: #f0f4f8;
-      display: none; /* 初始隐藏页面 */
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
     }
-
-    #installBtn {
+    #video, #canvas {
+      object-fit: contain;
+      position: absolute;
+      top: 0; bottom: 0; left: 0; right: 0;
+      margin: auto;
+    }
+    #video {
       display: none;
-      padding: 14px 32px;
-      font-size: 18px;
-      color: white;
-      background: linear-gradient(135deg, #408bce 0%, #00d9e4 100%);
-      border: none;
-      border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-      cursor: pointer;
-      transition: all 0.3s ease;
     }
-
-    #installBtn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+    #canvas {
+      z-index: 10;
     }
   </style>
-  <script>
-    // 动态加载 manifest.json
-    fetch('manifest.json')
-      .then(response => {
-        if (!response.ok) throw new Error("Manifest 加载失败");
-        return response.json();
-      })
-      .then(data => {
-        const link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = 'manifest.json';
-        document.head.appendChild(link);
-        document.body.style.display = 'block'; // 加载成功后显示页面
-      })
-      .catch(err => {
-        console.error(err);
-        document.body.innerHTML = '<h1>加载失败，请稍后再试。</h1>';
-        document.body.style.display = 'block';
-      });
-  </script>
 </head>
 <body>
-  <h1>欢迎使用 PWA 网页</h1>
-  <button id="installBtn" onclick="installApp()">添加到桌面</button>
 
-  <script>
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      document.getElementById("installBtn").style.display = "inline-block";
-    });
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
 
-    function installApp() {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(choice => {
-          if (choice.outcome === 'accepted') {
-            console.log('用户接受安装');
-          } else {
-            console.log('用户取消安装');
-          }
-          deferredPrompt = null;
-        });
-      }
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.14.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2"></script>
+
+<script>
+  // 所有 COCO 类别的中英文映射表
+  const classMap = {
+    person: "人类", bicycle: "自行车", car: "车辆", motorcycle: "摩托车", airplane: "飞机",
+    bus: "公车", train: "火车", truck: "卡车", boat: "船", "traffic light": "红绿灯",
+    "fire hydrant": "消防栓", "stop sign": "停止标志", "parking meter": "停车计时器", bench: "长椅",
+    bird: "鸟", cat: "猫", dog: "狗", horse: "马", sheep: "羊", cow: "牛",
+    elephant: "大象", bear: "熊", zebra: "斑马", giraffe: "长颈鹿", backpack: "背包",
+    umbrella: "雨伞", handbag: "手提包", tie: "领带", suitcase: "行李箱", frisbee: "飞盘",
+    skis: "滑雪板", snowboard: "滑雪板", "sports ball": "球类", kite: "风筝",
+    "baseball bat": "棒球棒", "baseball glove": "棒球手套", skateboard: "滑板",
+    surfboard: "冲浪板", "tennis racket": "网球拍", bottle: "瓶子", "wine glass": "酒杯",
+    cup: "杯子", fork: "叉子", knife: "刀子", spoon: "勺子", bowl: "碗",
+    banana: "香蕉", apple: "苹果", sandwich: "三明治", orange: "橘子", broccoli: "西兰花",
+    carrot: "胡萝卜", "hot dog": "热狗", pizza: "披萨", donut: "甜甜圈", cake: "蛋糕",
+    chair: "椅子", couch: "沙发", "potted plant": "盆栽植物", bed: "床",
+    "dining table": "餐桌", toilet: "马桶", tv: "电视", laptop: "笔电",
+    mouse: "鼠标", remote: "遥控器", keyboard: "键盘", "cell phone": "手机",
+    microwave: "微波炉", oven: "烤箱", toaster: "烤面包机", sink: "洗手槽",
+    refrigerator: "冰箱", book: "书", clock: "时钟", vase: "花瓶", scissors: "剪刀",
+    "teddy bear": "泰迪熊", "hair drier": "吹风机", toothbrush: "牙刷"
+  };
+
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
+  async function setupCamera() {
+    const video = document.getElementById("video");
+    const constraints = {
+      video: {
+        facingMode: isMobileDevice() ? { ideal: "environment" } : "user"
+      },
+      audio: false
+    };
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+      return new Promise(resolve => {
+        video.onloadedmetadata = () => resolve(video);
+      });
+    } catch (err) {
+      alert("无法访问摄像头：" + err.name + "\n请检查浏览器权限或设备支持情况。");
+      throw err;
     }
+  }
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').then(() => {
-        console.log("Service Worker 注册成功");
+  let canvasResized = false;
+  function resizeCanvasOnce(video, canvas) {
+    if (!canvasResized && video.videoWidth && video.videoHeight) {
+      video.width = video.videoWidth;
+      video.height = video.videoHeight;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvasResized = true;
+    }
+  }
+
+  function stringToColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const color = '#' + ((hash >> 24) & 0xFF).toString(16).padStart(2, '0') +
+                        ((hash >> 16) & 0xFF).toString(16).padStart(2, '0') +
+                        ((hash >> 8) & 0xFF).toString(16).padStart(2, '0');
+    return color;
+  }
+
+  async function initialize() {
+    const video = await setupCamera();
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const model = await cocoSsd.load({ base: 'lite_mobilenet_v2' });
+
+    let lastDetectionTime = 0;
+    const detectionInterval = 500;
+    let lastPredictions = [];
+
+    async function render(timestamp) {
+      requestAnimationFrame(render);
+
+      if (!video.videoWidth || !video.videoHeight) return;
+
+      resizeCanvasOnce(video, canvas);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const now = performance.now();
+      if (now - lastDetectionTime > detectionInterval) {
+        lastPredictions = await model.detect(video);
+        lastDetectionTime = now;
+      }
+
+      lastPredictions.forEach(pred => {
+        if (pred.score > 0.5) {
+          const [x, y, width, height] = pred.bbox;
+          const cnLabel = classMap[pred.class] || pred.class;
+          const label = `${cnLabel}（${(pred.score * 100).toFixed(1)}%）`;
+          const color = stringToColor(pred.class);
+
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 3;
+          ctx.strokeRect(x, y, width, height);
+
+          ctx.font = "18px sans-serif";
+          ctx.fillStyle = color;
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          const textWidth = ctx.measureText(label).width;
+          ctx.fillText(label, x + width / 2 - textWidth / 2, y + height / 2);
+        }
       });
     }
-  </script>
+
+    requestAnimationFrame(render);
+  }
+
+  initialize();
+</script>
+
+
+<script>
+  // 处理 beforeinstallprompt
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    console.log('已拦截安装提示');
+  });
+  // 任意点击触发安装
+  window.addEventListener('click', () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(choice => {
+        if (choice.outcome === 'accepted') {
+          console.log('用户接受安装');
+        } else {
+          console.log('用户取消安装');
+        }
+        deferredPrompt = null;
+      });
+    }
+  });
+  // 嵌入式 Service Worker 注册
+  if ('serviceWorker' in navigator) {
+    const swCode = `
+      self.addEventListener('install', event => {
+        console.log('Service Worker 安装完成');
+      });
+
+      self.addEventListener('fetch', event => {
+        // 不拦截任何请求
+      });
+    `;
+    const blob = new Blob([swCode], { type: 'application/javascript' });
+    const swUrl = URL.createObjectURL(blob);
+
+    navigator.serviceWorker.register(swUrl).then(() => {
+      console.log('嵌入式 Service Worker 注册成功');
+    }).catch(err => {
+      console.error('Service Worker 注册失败:', err);
+    });
+  }
+</script>
+
 </body>
 </html>
