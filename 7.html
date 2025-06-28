@@ -2,56 +2,74 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>光照传感器演示</title>
+  <title>环境光传感器演示</title>
   <style>
     body {
-      font-family: sans-serif;
-      background-color: #f2f2f2;
-      padding: 20px;
+      font-family: Arial, sans-serif;
       text-align: center;
+      padding: 50px;
+      background: #f9f9f9;
     }
-    .value {
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    #lux {
       font-size: 48px;
       color: #333;
     }
-    .status {
+    #status {
       margin-top: 20px;
-      color: #888;
+      color: #777;
     }
   </style>
 </head>
 <body>
-  <h1>📟 光照强度读取</h1>
-  <div class="value" id="luxValue">读取中...</div>
-  <div class="status" id="status">正在检测浏览器支持...</div>
+  <h1>当前光照强度</h1>
+  <div id="lux">读取中...</div>
+  <div id="status">正在检测浏览器支持...</div>
 
   <script>
-    const luxDisplay = document.getElementById('luxValue');
-    const statusDisplay = document.getElementById('status');
+    const luxElement = document.getElementById('lux');
+    const statusElement = document.getElementById('status');
 
-    if ('AmbientLightSensor' in window) {
+    async function initAmbientLightSensor() {
+      if (!('AmbientLightSensor' in window)) {
+        luxElement.textContent = '不支持';
+        statusElement.textContent = '当前浏览器不支持 Ambient Light Sensor API';
+        return;
+      }
+
       try {
+        const permissionStatus = await navigator.permissions.query({ name: 'ambient-light-sensor' });
+
+        if (permissionStatus.state === 'denied') {
+          luxElement.textContent = '权限被拒绝';
+          statusElement.textContent = '请在浏览器设置中启用光照传感器权限';
+          return;
+        }
+
         const sensor = new AmbientLightSensor();
+
         sensor.addEventListener('reading', () => {
-          luxDisplay.textContent = `${sensor.illuminance.toFixed(2)} lux`;
-          statusDisplay.textContent = '传感器工作正常';
+          luxElement.textContent = `${sensor.illuminance.toFixed(2)} lux`;
+          statusElement.textContent = '读取成功 ✔';
         });
 
         sensor.addEventListener('error', event => {
-          luxDisplay.textContent = '读取失败';
-          statusDisplay.textContent = `错误：${event.error.name}`;
+          luxElement.textContent = '读取失败';
+          statusElement.textContent = `错误：${event.error.name} - ${event.error.message || '未知错误'}`;
         });
 
         sensor.start();
-        statusDisplay.textContent = '传感器启动中...';
+        statusElement.textContent = '传感器启动中...';
       } catch (err) {
-        luxDisplay.textContent = '启动失败';
-        statusDisplay.textContent = `异常：${err.message}`;
+        luxElement.textContent = '启动失败';
+        statusElement.textContent = `异常：${err.message}`;
       }
-    } else {
-      luxDisplay.textContent = '不支持';
-      statusDisplay.textContent = '当前浏览器不支持 Ambient Light Sensor API';
     }
+
+    initAmbientLightSensor();
   </script>
 </body>
 </html>
