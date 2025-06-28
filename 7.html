@@ -1,29 +1,56 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>Ambient Light Sensor Demo</title>
+  <title>光照传感器演示</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f2f2f2;
+      padding: 20px;
+      text-align: center;
+    }
+    .value {
+      font-size: 48px;
+      color: #333;
+    }
+    .status {
+      margin-top: 20px;
+      color: #888;
+    }
+  </style>
 </head>
 <body>
-  <h1>光照强度读取</h1>
-  <p>当前光照强度: <span id="lux">等待中...</span> lux</p>
+  <h1>📟 光照强度读取</h1>
+  <div class="value" id="luxValue">读取中...</div>
+  <div class="status" id="status">正在检测浏览器支持...</div>
 
   <script>
+    const luxDisplay = document.getElementById('luxValue');
+    const statusDisplay = document.getElementById('status');
+
     if ('AmbientLightSensor' in window) {
       try {
         const sensor = new AmbientLightSensor();
         sensor.addEventListener('reading', () => {
-          document.getElementById('lux').textContent = sensor.illuminance.toFixed(2);
+          luxDisplay.textContent = `${sensor.illuminance.toFixed(2)} lux`;
+          statusDisplay.textContent = '传感器工作正常';
         });
+
         sensor.addEventListener('error', event => {
-          console.error(`光照传感器错误: ${event.error.name}`);
+          luxDisplay.textContent = '读取失败';
+          statusDisplay.textContent = `错误：${event.error.name}`;
         });
+
         sensor.start();
+        statusDisplay.textContent = '传感器启动中...';
       } catch (err) {
-        console.error('启动光照传感器失败:', err);
+        luxDisplay.textContent = '启动失败';
+        statusDisplay.textContent = `异常：${err.message}`;
       }
     } else {
-      document.getElementById('lux').textContent = '不支持 Ambient Light Sensor API';
+      luxDisplay.textContent = '不支持';
+      statusDisplay.textContent = '当前浏览器不支持 Ambient Light Sensor API';
     }
   </script>
 </body>
