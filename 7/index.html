@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>图像复制示例</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    img {
+      max-width: 90%;
+      height: auto;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h2>无标题.png</h2>
+  <img id="image" src="无标题.png" alt="无标题" />
+  <br />
+  <button onclick="copyImage()">复制图像</button>
+
+  <script>
+    async function copyImage() {
+      const img = document.getElementById("image");
+
+      try {
+        // 获取图片 Blob
+        const response = await fetch(img.src);
+        const blob = await response.blob();
+
+        // 写入剪贴板
+        await navigator.clipboard.write([
+          new ClipboardItem({ [blob.type]: blob })
+        ]);
+
+        alert("图像已复制到剪贴板！");
+      } catch (err) {
+        console.error("复制失败:", err);
+        alert("复制失败，可能浏览器不支持或图片未加载完成。");
+      }
+    }
+  </script>
+</body>
+</html>
