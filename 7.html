@@ -1,42 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>跳转微信菜单</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    button {
-      padding: 12px 24px;
-      font-size: 18px;
-      background-color: #1AAD19;
-      color: white;
-      border: none;
-      border-radius: 6px;
-    }
-  </style>
+  <title>跳转到微信</title>
 </head>
 <body>
-
-  <h2>点击跳转微信菜单</h2>
-  <button onclick="openWeChatMenu()">打开菜单</button>
-
-  <script>
-    function openWeChatMenu() {
-      // 安卓支持 intent 方式跳转
-      const schemeUrl = "weixin://bizmsgmenu?msgmenucontent=爸爸&msgmenuid=960";
-      const intentUrl =
-        "intent://" + schemeUrl.replace("weixin://", "") +
-        "#Intent;scheme=weixin;package=com.tencent.mm;end";
-
-      // Android 尝试跳转
-      window.location.href = intentUrl;
-
-      // 可选：延迟 fallback（用于无效时提示）
-      setTimeout(() => {
-        alert("请确保已安装微信，或在微信内打开此页面");
-      }, 2000);
-    }
-  </script>
-
+  <h2>点击下方按钮跳转到微信</h2>
+  <a href="intent://#Intent;scheme=weixin;package=com.tencent.mm;end;">
+    <button>打开微信</button>
+  </a>
 </body>
 </html>
