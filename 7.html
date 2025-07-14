@@ -2,58 +2,25 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>图片上传与分享</title>
+  <title>多图上传并分享</title>
   <style>
     body {
-      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-      background-color: #f4f4f4;
-      padding: 40px;
+      font-family: Arial, sans-serif;
+      padding: 20px;
       text-align: center;
-      color: #333;
     }
-
-    h2 {
-      margin-bottom: 20px;
-    }
-
-    input[type="file"] {
-      margin: 10px auto;
-      padding: 10px;
-    }
-
     img {
-      max-width: 100%;
-      height: auto;
-      margin: 20px 0;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      display: none;
+      max-width: 200px;
+      margin: 10px;
     }
-
     .button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-
-    .button:hover {
-      background-color: #0056b3;
-    }
-
-    .status {
       margin-top: 20px;
+      padding: 10px 20px;
       font-size: 16px;
-      min-height: 24px;
-      color: green;
     }
-
-    .error {
-      color: red;
+    #status {
+      margin-top: 15px;
+      color: green;
     }
   </style>
 </head>
@@ -61,9 +28,60 @@
 
   <h2>上传图片并分享</h2>
 
-  <input type="file" accept="image/*" id="imageInput"><br>
-  <img id="preview" src="#" alt="预览图片"><br>
+  <input type="file" accept="image/*" id="imageInput" multiple><br>
+  <div id="previewContainer"></div>
 
   <button class="button" id="shareBtn">分享图片</button>
+  <div id="status"></div>
 
-  <div class="status" id
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const previewContainer = document.getElementById('previewContainer');
+    const shareBtn = document.getElementById('shareBtn');
+    const status = document.getElementById('status');
+
+    let imageFiles = [];
+
+    imageInput.addEventListener('change', function () {
+      imageFiles = Array.from(this.files);
+      previewContainer.innerHTML = '';
+      status.textContent = '';
+
+      imageFiles.forEach(file => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            previewContainer.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    });
+
+    shareBtn.addEventListener('click', async function () {
+      if (imageFiles.length === 0) {
+        status.textContent = '请先选择图片！';
+        return;
+      }
+
+      if (navigator.canShare && navigator.canShare({ files: imageFiles })) {
+        try {
+          await navigator.share({
+            files: imageFiles,
+            title: '分享图片',
+            text: '看看这些图片！',
+          });
+          status.textContent = '图片已分享。';
+        } catch (err) {
+          status.textContent = '分享失败：' + err;
+        }
+      } else {
+        status.textContent = '此浏览器不支持图片分享。';
+      }
+    });
+  </script>
+
+</body>
+</html>
