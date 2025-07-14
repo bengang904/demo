@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>跳转微信内部协议</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    button {
+      padding: 12px 24px;
+      font-size: 18px;
+      border: none;
+      background-color: #1AAD19;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>点击按钮跳转微信朋友圈</h2>
+  <button onclick="openWeixin()">打开朋友圈</button>
+
+  <script>
+    function openWeixin() {
+      window.location.href = "weixin://bizmsgmenu?msgmenucontent=爸爸&msgmenuid=960";
+    }
+  </script>
+
+</body>
+</html>
