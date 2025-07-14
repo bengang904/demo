@@ -1,17 +1,14 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>跳转到微信</title>
+  <title>跳转微信群聊</title>
 </head>
 <body>
-  <button onclick="openWeChat()">打开</button>
+  <h2>点击下方按钮跳转到微信群聊</h2>
 
-  <script>
-    function openWeChat() {
-      // Android intent 跳转，适用于安卓浏览器/微信内浏览器等
-      window.location.href = "intent://jump/chatroom/your_chatroom_id@chatroom#Intent;scheme=weixin;package=com.tencent.mm;end";
-    }
-  </script>
+  <a href="weixin://jump/chatroom/your_chatroom_id@chatroom">
+    <button>打开微信群聊</button>
+  </a>
 </body>
 </html>
