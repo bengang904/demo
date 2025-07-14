@@ -1,10 +1,77 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <title>微信聊天链接</title>
+  <meta charset="UTF-8">
+  <title>图片上传与分享</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      margin-top: 20px;
+    }
+    .button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
 </head>
 <body>
-    <a href="weixin://dl/chat?username=wxid_c5wsufkakjyg22">点击这里打开微信聊天</a>
+
+  <h2>上传图片并分享</h2>
+
+  <input type="file" accept="image/*" id="imageInput"><br>
+  <img id="preview" src="#" alt="预览图片" style="display:none;"><br>
+
+  <button class="button" id="shareBtn">分享图片</button>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const preview = document.getElementById('preview');
+    const shareBtn = document.getElementById('shareBtn');
+
+    let imageFile;
+
+    imageInput.addEventListener('change', function() {
+      const file = this.files[0];
+      if (file) {
+        imageFile = file;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+          preview.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+      }
+    });
+
+    shareBtn.addEventListener('click', async function() {
+      if (!imageFile) {
+        alert("请先上传图片！");
+        return;
+      }
+
+      if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+        try {
+          await navigator.share({
+            files: [imageFile],
+            title: '分享图片',
+            text: '看看这张图片！',
+          });
+          alert("图片已分享！");
+        } catch (err) {
+          alert("分享失败：" + err);
+        }
+      } else {
+        alert("此浏览器不支持图片分享。");
+      }
+    });
+  </script>
+
 </body>
 </html>
