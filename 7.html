@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-  <title>跳转微信小程序</title>
+  <meta charset="UTF-8">
+  <title>跳转到微信群聊</title>
 </head>
 <body>
-  <h2>点击</h2>
-  <a href="intent://jump/voipdetail/?data=1#Intent;scheme=weixin;package=com.tencent.mm;end;">
-    <button>打开</button>
-  </a>
+  <button onclick="location.href='weixin://jump/chatroom/your_chatroom_id@chatroom'">
+    进入微信群聊
+  </button>
 </body>
 </html>
