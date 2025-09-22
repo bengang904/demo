@@ -2,35 +2,34 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>本地网页通知示例</title>
+<title>本地网页自动通知示例</title>
 </head>
 <body>
-<h1>本地网页通知示例</h1>
-<button id="notifyBtn">显示通知</button>
+<h1>本地网页自动通知示例</h1>
+<p>页面将每秒发送一次本地通知（需要允许通知权限）</p>
 
 <script>
-const btn = document.getElementById('notifyBtn');
-
 // 请求通知权限
 if ('Notification' in window) {
     Notification.requestPermission().then(permission => {
-        console.log('通知权限:', permission);
+        if (permission === 'granted') {
+            console.log('通知权限已允许');
+
+            // 每秒发送一次通知
+            setInterval(() => {
+                new Notification('本地通知', {
+                    body: '这是每秒自动发送的通知示例',
+                    icon: 'https://cdn-icons-png.flaticon.com/512/1828/1828817.png'
+                });
+            }, 1000); // 1000 毫秒 = 1 秒
+
+        } else {
+            alert('请允许通知权限才能看到自动通知');
+        }
     });
 } else {
     alert('你的浏览器不支持通知 API');
 }
-
-// 点击按钮显示通知
-btn.addEventListener('click', () => {
-    if (Notification.permission === 'granted') {
-        new Notification('本地通知', {
-            body: '这是一个只靠 HTML + JS 的本地通知示例',
-            icon: 'https://cdn-icons-png.flaticon.com/512/1828/1828817.png' // 可换成你自己的图标
-        });
-    } else {
-        alert('请先允许通知权限');
-    }
-});
 </script>
 </body>
 </html>
