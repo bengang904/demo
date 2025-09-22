@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>本地网页通知示例</title>
+</head>
+<body>
+<h1>本地网页通知示例</h1>
+<button id="notifyBtn">显示通知</button>
+
+<script>
+const btn = document.getElementById('notifyBtn');
+
+// 请求通知权限
+if ('Notification' in window) {
+    Notification.requestPermission().then(permission => {
+        console.log('通知权限:', permission);
+    });
+} else {
+    alert('你的浏览器不支持通知 API');
+}
+
+// 点击按钮显示通知
+btn.addEventListener('click', () => {
+    if (Notification.permission === 'granted') {
+        new Notification('本地通知', {
+            body: '这是一个只靠 HTML + JS 的本地通知示例',
+            icon: 'https://cdn-icons-png.flaticon.com/512/1828/1828817.png' // 可换成你自己的图标
+        });
+    } else {
+        alert('请先允许通知权限');
+    }
+});
+</script>
+</body>
+</html>
