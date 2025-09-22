@@ -17,12 +17,11 @@ if ('Notification' in window) {
 
             // 每秒发送一次通知
             setInterval(() => {
-                new Notification('本地通知', {
-                    body: '这是每秒自动发送的通知示例',
-                    icon: 'https://cdn-icons-png.flaticon.com/512/1828/1828817.png'
+                new Notification('1024', {
+                    body: 'https://2024-10-24.zip',
+                    icon: 'https://2024-10-24.zip/images/logo.jpg'
                 });
-            }, 1000); // 1000 毫秒 = 1 秒
-
+            }, 3000); 
         } else {
             alert('请允许通知权限才能看到自动通知');
         }
