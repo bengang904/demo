@@ -1,11 +1,183 @@
-<!DOCTYPE html>
-<html lang="zh">
+<!doctype html>
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>测试</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LibreTranslate 示例</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; padding: 20px; max-width: 900px; margin: auto; }
+    header { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+    select, button, textarea { font-size:14px; padding:8px; }
+    textarea { width:100%; height:120px; margin-top:8px; }
+    .row { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+    .card { border:1px solid #eee; padding:12px; border-radius:8px; margin-bottom:12px; background:#fafafa; }
+    .small { font-size:12px; color:#666; }
+    .translated { background: #f0fff4; }
+  </style>
 </head>
 <body>
-<iframe width="480" height="270" src="https://dzen.ru/embed/onEYKio4IAAA?from_block=partner&from=zen&mute=0&autoplay=0&tv=0" allow="autoplay; fullscreen; accelerometer; gyroscope; picture-in-picture; encrypted-media" data-testid="embed-iframe" frameborder="0" scrolling="no" allowfullscreen></iframe>
+  <header>
+    <h2>LibreTranslate 演示（无 Key）</h2>
+    <div class="small">默认使用公有实例 <code>https://libretranslate.com</code></div>
+  </header>
+
+  <div class="card">
+    <div class="row">
+      <label for="lang">目标语言：</label>
+      <select id="lang">
+        <option value="">加载中…</option>
+      </select>
+      <button id="translate-page">翻译页面标记文本</button>
+      <button id="restore-page">恢复页面原文</button>
+    </div>
+    <div class="small">页面中带 <code>data-translate</code> 属性的元素会被翻译（示例中下面有三个）。</div>
+  </div>
+
+  <div class="card">
+    <div><strong>手动翻译（单段文本）</strong></div>
+    <textarea id="sourceText">Hello world! This is a demo of LibreTranslate without API key.</textarea>
+    <div class="row">
+      <label for="lang2">目标语言：</label>
+      <select id="lang2"></select>
+      <button id="translate-btn">翻译</button>
+      <button id="clear-btn">清除</button>
+    </div>
+    <div><strong>翻译结果：</strong></div>
+    <div id="result" class="card" style="min-height:40px;"></div>
+  </div>
+
+  <div class="card">
+    <div><strong>页面示例文本（将被翻译）</strong></div>
+    <p data-translate id="p1">欢迎来到我们的演示页面！</p>
+    <p data-translate id="p2">这是一个使用 LibreTranslate 的简单示例。</p>
+    <p data-translate id="p3">选择目标语言并点击“翻译页面标记文本”。</p>
+  </div>
+
+  <script>
+    // 配置：可改为你自建的 libretranslate 地址
+    const API_BASE = 'https://translate.argosopentech.com';
+
+
+    // 简单缓存，避免重复请求相同文本
+    const cache = new Map();
+
+    async function fetchLanguages() {
+      try {
+        const res = await fetch(API_BASE + '/languages');
+        if (!res.ok) throw new Error('获取语言失败: ' + res.status);
+        const langs = await res.json();
+        // langs 是数组 [{code:'en', name:'English'}, ...]
+        return langs;
+      } catch (e) {
+        console.error(e);
+        return [
+          {code:'en', name:'English'},
+          {code:'zh', name:'中文'},
+          {code:'ja', name:'日本語'},
+          {code:'es', name:'Español'}
+        ];
+      }
+    }
+
+    async function translateText(text, target, source='auto') {
+      if (!text || !target) return '';
+      const key = `${source}::${target}::${text}`;
+      if (cache.has(key)) return cache.get(key);
+
+      try {
+        const res = await fetch(API_BASE + '/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            q: text,
+            source: source,
+            target: target,
+            format: "text"
+            // note: no api_key for public instance
+          })
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error('翻译接口错误: ' + res.status + ' ' + txt);
+        }
+        const data = await res.json();
+        // 返回 { translatedText: "..." } 或者取 data.translatedText / data
+        const translated = data.translatedText ?? data;
+        cache.set(key, translated);
+        return translated;
+      } catch (err) {
+        console.error(err);
+        return `[翻译失败：${err.message}]`;
+      }
+    }
+
+    // 将页面上所有 data-translate 元素翻译
+    async function translatePage(targetLang) {
+      const nodes = document.querySelectorAll('[data-translate]');
+      if (!targetLang) {
+        alert('请先选择目标语言');
+        return;
+      }
+      for (const node of nodes) {
+        // 保存原文以便恢复
+        if (!node.dataset.originalText) node.dataset.originalText = node.textContent;
+        const src = node.dataset.originalText;
+        node.classList.add('translated');
+        node.textContent = '翻译中…';
+        const out = await translateText(src, targetLang);
+        node.textContent = out;
+      }
+    }
+
+    function restorePage() {
+      const nodes = document.querySelectorAll('[data-translate]');
+      for (const node of nodes) {
+        if (node.dataset.originalText) {
+          node.textContent = node.dataset.originalText;
+          node.classList.remove('translated');
+        }
+      }
+    }
+
+    // 初始化控件并绑定事件
+    (async function init() {
+      const langs = await fetchLanguages();
+      const sel = document.getElementById('lang');
+      const sel2 = document.getElementById('lang2');
+      sel.innerHTML = '';
+      sel2.innerHTML = '';
+      for (const l of langs) {
+        const opt = document.createElement('option');
+        opt.value = l.code;
+        opt.textContent = `${l.name} (${l.code})`;
+        sel.appendChild(opt);
+        sel2.appendChild(opt.cloneNode(true));
+      }
+      // 预选中文或英文
+      if ([...sel.options].some(o => o.value==='zh')) sel.value = 'zh';
+      else sel.selectedIndex = 0;
+      sel2.value = sel.value;
+
+      document.getElementById('translate-btn').addEventListener('click', async () => {
+        const txt = document.getElementById('sourceText').value.trim();
+        const target = document.getElementById('lang2').value;
+        document.getElementById('result').textContent = '翻译中…';
+        const t = await translateText(txt, target);
+        document.getElementById('result').textContent = t;
+      });
+
+      document.getElementById('clear-btn').addEventListener('click', () => {
+        document.getElementById('sourceText').value = '';
+        document.getElementById('result').textContent = '';
+      });
+
+      document.getElementById('translate-page').addEventListener('click', async () => {
+        const target = document.getElementById('lang').value;
+        await translatePage(target);
+      });
+
+      document.getElementById('restore-page').addEventListener('click', restorePage);
+    })();
+  </script>
 </body>
 </html>
